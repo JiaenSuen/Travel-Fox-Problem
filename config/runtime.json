@@ -1,0 +1,5 @@
+{
+  "conda_env": "tfp-rl",
+  "preferred_device": "cuda",
+  "require_cuda_for_training": true
+}

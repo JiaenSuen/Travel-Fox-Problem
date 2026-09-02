@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env/
+results/*
+!results/.gitkeep
+videos/*
+!videos/.gitkeep
+*.mp4
+.DS_Store
+.vscode/
+.idea/
+
+# Keep the small reference checkpoints; ignore ad-hoc training outputs.
+checkpoints/*.pt
+checkpoints/**/*.pt
+!checkpoints/FOX-TR-L1/simple_cnn_001.pt
+!checkpoints/FOX-TR-L1/simple_cnn_tabu_002.pt
+!checkpoints/FOX-TR-L1/action_memory_cnn_003.pt
+
+!checkpoints/FOX-TR-L1/simple_cnn_tabux_004.pt
+!checkpoints/FOX-TR-L1/action_memory_tabux_cnn_005.pt
