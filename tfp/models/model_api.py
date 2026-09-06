@@ -17,7 +17,32 @@ class ModelSpec:
     algorithm: str = "ppo"
     recurrent: bool = False
     memory_type: str = "none"
+    intrinsic_module: str = "none"
+    bootstrap_from: str = ""
     description: str = ""
+
+
+LEGACY_MODEL_ALIASES = {
+    "simple_cnn_001": "001_simple_cnn",
+    "simple_cnn_tabu_002": "002_simple_cnn_tabu",
+    "action_memory_cnn_003": "003_action_memory_cnn",
+    "simple_cnn_tabux_004": "004_simple_cnn_tabux",
+    "action_memory_tabux_cnn_005": "005_action_memory_tabux_cnn",
+    "ppo_gru_staged_006": "006_ppo_gru_bootstrap",
+    "ppo_gru_action_memory_008": "007_ppo_gru_action_memory",
+    "008_ppo_gru_action_memory": "007_ppo_gru_action_memory",
+    "ppo_gru_episodic_count_010": "008_ppo_gru_episodic_count",
+    "010_ppo_gru_episodic_count": "008_ppo_gru_episodic_count",
+    "ppo_gru_gobi_014": "010_ppo_gru_gobi",
+    "014_ppo_gru_gobi": "010_ppo_gru_gobi",
+    "012_ppo_gru_gobi": "010_ppo_gru_gobi",
+}
+
+
+
+
+def normalize_model_name(module_name: str) -> str:
+    return LEGACY_MODEL_ALIASES.get(str(module_name), str(module_name))
 
 
 def _module_to_spec(module: ModuleType) -> ModelSpec | None:
@@ -51,6 +76,7 @@ def discover_model_plugins() -> dict[str, ModelSpec]:
 
 
 def load_model_plugin(module_name: str) -> tuple[ModelSpec, Callable[[tuple[int, int, int], int], nn.Module]]:
+    module_name = normalize_model_name(module_name)
     module = importlib.import_module(f"tfp.models.{module_name}")
     spec = _module_to_spec(module)
     if spec is None:

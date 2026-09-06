@@ -19,6 +19,16 @@ class RewardFunction(Protocol):
     def compute(self, transition: dict[str, object]) -> float: ...
 
 
+LEGACY_REWARD_ALIASES = {
+    "dense_transport_001": "001_dense_transport",
+    "sparse_transport_001": "001_sparse_transport",
+}
+
+
+def normalize_reward_name(module_name: str) -> str:
+    return LEGACY_REWARD_ALIASES.get(str(module_name), str(module_name))
+
+
 def _module_to_spec(module: ModuleType) -> RewardSpec | None:
     raw = getattr(module, "REWARD_SPEC", None)
     factory = getattr(module, "create_reward", None)
@@ -43,6 +53,7 @@ def discover_reward_plugins() -> dict[str, RewardSpec]:
 
 
 def load_reward_plugin(module_name: str) -> tuple[RewardSpec, Callable[[], RewardFunction]]:
+    module_name = normalize_reward_name(module_name)
     module = importlib.import_module(f"tfp.rewards.{module_name}")
     spec = _module_to_spec(module)
     if spec is None:

@@ -14,7 +14,6 @@ import numpy as np
 import torch
 from torch import nn
 
-from tfp import __version__ as TFP_VERSION
 from tfp.envs.transport_env import TransportEnv
 from tfp.evaluation.diagnostics import BehaviorDiagnostics
 from tfp.models.model_api import load_model_plugin, rollout_forward
@@ -143,7 +142,7 @@ def evaluate_policy(
     device: torch.device,
     seeds: Iterable[int] = DEFAULT_EVAL_SEEDS,
     action_mask_mode: str = "task",
-    policy_module: str = "ppo_categorical_001",
+    policy_module: str = "001_ppo_categorical",
     model_name: str = "unknown",
     presentation: str = "data",
     output_dir: str | Path = "results",
@@ -260,7 +259,6 @@ def evaluate_policy(
     safe_policy = policy_module.lower().replace("-", "_")
     safe_reward = env.reward_module.lower().replace("-", "_")
     metadata: dict[str, object] = {
-        "tfp_version": TFP_VERSION,
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "python": platform.python_version(),
         "platform": platform.platform(),
@@ -285,8 +283,11 @@ def evaluate_policy(
 
 def load_checkpoint_model(checkpoint_path: str | Path, device: torch.device) -> tuple[nn.Module, dict]:
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    module_name = checkpoint.get("model_module", "simple_cnn_001")
+    module_name = checkpoint.get("model_module", "001_simple_cnn")
     _, factory = load_model_plugin(module_name)
     model = factory(tuple(checkpoint["observation_shape"]), int(checkpoint["action_count"])).to(device)
     model.load_state_dict(checkpoint["model_state"])
+    progress_hook = getattr(model, "set_training_progress", None)
+    if callable(progress_hook):
+        progress_hook(1.0)
     return model, checkpoint

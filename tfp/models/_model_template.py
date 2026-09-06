@@ -1,12 +1,12 @@
-"""Copy this file to a new name such as ``my_cnn_002.py`` and remove the leading underscore."""
+"""Copy this file to a new name such as ``015_my_cnn.py`` and remove the leading underscore."""
 from __future__ import annotations
 
 import torch
 from torch import nn
 
 MODEL_SPEC = {
-    "key": "my_cnn_002",
-    "display_name": "My CNN 002",
+    "key": "015_my_cnn",
+    "display_name": "015 · My CNN",
     "algorithm": "ppo",
     "recurrent": False,
     "description": "Describe the research idea here.",

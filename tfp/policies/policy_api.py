@@ -36,7 +36,7 @@ def apply_model_action_rewrite(
     """Apply an optional inference-time action controller owned by the model.
 
     TFP deliberately keeps these rewrites out of PPO sampling. A plugin such as
-    ``simple_cnn_tabu_002`` therefore learns from the unmodified neural policy and
+    ``002_simple_cnn_tabu`` therefore learns from the unmodified neural policy and
     only uses its anti-cycle controller when ``greedy`` inference is requested.
     """
     hook = getattr(model, "rewrite_actions", None)
@@ -94,6 +94,13 @@ def reset_model_memory(model: nn.Module, env_ids: Sequence[int]) -> None:
             hook(ids)
 
 
+LEGACY_POLICY_ALIASES = {"ppo_categorical_001": "001_ppo_categorical"}
+
+
+def normalize_policy_name(module_name: str) -> str:
+    return LEGACY_POLICY_ALIASES.get(str(module_name), str(module_name))
+
+
 def _module_to_spec(module: ModuleType) -> PolicySpec | None:
     raw = getattr(module, "POLICY_SPEC", None)
     factory = getattr(module, "create_policy", None)
@@ -118,6 +125,7 @@ def discover_policy_plugins() -> dict[str, PolicySpec]:
 
 
 def load_policy_plugin(module_name: str) -> tuple[PolicySpec, Callable[[], ActionPolicy]]:
+    module_name = normalize_policy_name(module_name)
     module = importlib.import_module(f"tfp.policies.{module_name}")
     spec = _module_to_spec(module)
     if spec is None:

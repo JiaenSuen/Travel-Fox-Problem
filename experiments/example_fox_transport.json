@@ -1,8 +1,5 @@
 {
   "task": "TFP-FoxTransport-Local",
-  "model": "simple_cnn_001",
-  "policy": "ppo_categorical_001",
-  "reward": "dense_transport_001",
   "device": "cuda",
   "timesteps": "120000",
   "num_envs": "16",
@@ -21,5 +18,9 @@
   "entropy": "0.012",
   "eval_every": "20000",
   "eval_seeds": "101,211,307,401,503,601,701,809,907,1009",
+  "eval_checkpoint_role": "last",
+  "model": "001_simple_cnn",
+  "policy": "001_ppo_categorical",
+  "reward": "001_dense_transport",
   "experiment_tag": "baseline-example"
 }

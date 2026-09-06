@@ -7,6 +7,7 @@ from typing import Dict, Optional, Sequence, Tuple
 import numpy as np
 
 from tfp.rewards import load_reward_plugin
+from tfp.rewards.reward_api import normalize_reward_name
 from .base import load_ascii_map, reachable_cells
 
 
@@ -36,13 +37,12 @@ class TransportEnv:
         map_paths: Sequence[str | Path],
         observation_mode: str = "local",
         view_size: int = 5,
-        global_canvas_size: int = 20,
         max_steps: Optional[int] = None,
         seed: int = 0,
-        reward_module: str = "dense_transport_001",
+        reward_module: str = "001_dense_transport",
     ) -> None:
-        if observation_mode not in {"global", "local"}:
-            raise ValueError("observation_mode must be 'global' or 'local'.")
+        if observation_mode != "local":
+            raise ValueError("TFP supports local observation only.")
         if view_size % 2 == 0 or view_size < 3:
             raise ValueError("view_size must be an odd integer >= 3.")
         if not map_paths:
@@ -51,21 +51,15 @@ class TransportEnv:
         self.map_paths = [Path(p) for p in map_paths]
         self.observation_mode = observation_mode
         self.view_size = view_size
-        self.global_canvas_size = global_canvas_size
         self._configured_max_steps = max_steps
         self.max_steps = max_steps or 120
         self.rng = np.random.default_rng(seed)
-        self.reward_module = reward_module
-        self.reward_spec, reward_factory = load_reward_plugin(reward_module)
+        self.reward_module = normalize_reward_name(reward_module)
+        self.reward_spec, reward_factory = load_reward_plugin(self.reward_module)
         self.reward_function = reward_factory()
 
         self.action_space_n = 6
-        max_h = max(load_ascii_map(p)[0].shape[0] for p in self.map_paths)
-        max_w = max(load_ascii_map(p)[0].shape[1] for p in self.map_paths)
-        if observation_mode == "global" and (max_h > global_canvas_size or max_w > global_canvas_size):
-            raise ValueError("global_canvas_size must fit the largest map.")
-        spatial = (global_canvas_size, global_canvas_size) if observation_mode == "global" else (view_size, view_size)
-        self.observation_shape = (10, *spatial)
+        self.observation_shape = (10, view_size, view_size)
 
         self.grid: np.ndarray
         self.agent_pos: Tuple[int, int]
@@ -147,6 +141,8 @@ class TransportEnv:
         delivered = False
         moved = False
         distance_before = self._target_distance(self.agent_pos)
+        pickup_available_before = bool((not self.carrying) and self.object_pos == self.agent_pos)
+        delivery_available_before = bool(self.carrying and self.agent_pos == self.goal_pos)
 
         if action in self.ACTIONS:
             dr, dc = self.ACTIONS[action]
@@ -207,6 +203,10 @@ class TransportEnv:
             "distance_after": int(distance_after),
             "distance_delta": distance_delta,
             "carrying": bool(self.carrying),
+            "pickup_available_before": pickup_available_before,
+            "delivery_available_before": delivery_available_before,
+            "missed_pickup": bool(pickup_available_before and int(action) != 4),
+            "missed_delivery": bool(delivery_available_before and int(action) != 5),
             "step": int(self.steps),
         }
         reward = float(self.reward_function.compute(transition))
@@ -236,36 +236,18 @@ class TransportEnv:
         }
 
     def _observation(self) -> np.ndarray:
-        return self._global_observation() if self.observation_mode == "global" else self._local_observation()
+        return self._local_observation()
 
     def _write_common_channels(self, obs: np.ndarray) -> None:
         ar, ac = self.agent_pos
         target = self.goal_pos if self.carrying else self.object_pos
         obs[4, :, :] = 1.0 if self.carrying else 0.0
         if target is not None:
-            if self.observation_mode == "local":
-                row_scale = col_scale = float(max(1, self.view_size // 2))
-            else:
-                row_scale = float(max(1, self.grid.shape[0] - 1))
-                col_scale = float(max(1, self.grid.shape[1] - 1))
+            row_scale = col_scale = float(max(1, self.view_size // 2))
             obs[5, :, :] = np.clip((target[0] - ar) / row_scale, -1.0, 1.0)
             obs[6, :, :] = np.clip((target[1] - ac) / col_scale, -1.0, 1.0)
         obs[7, :, :] = 1.0 if (not self.carrying and self.object_pos == self.agent_pos) else 0.0
         obs[8, :, :] = 1.0 if (self.carrying and self.agent_pos == self.goal_pos) else 0.0
-
-    def _global_observation(self) -> np.ndarray:
-        canvas = self.global_canvas_size
-        obs = np.zeros((10, canvas, canvas), dtype=np.float32)
-        h, w = self.grid.shape
-        obs[9, :, :] = 1.0
-        obs[9, :h, :w] = 0.0
-        obs[0, :h, :w] = self.grid.astype(np.float32)
-        if self.object_pos is not None:
-            obs[1, self.object_pos[0], self.object_pos[1]] = 1.0
-        obs[2, self.goal_pos[0], self.goal_pos[1]] = 1.0
-        obs[3, self.agent_pos[0], self.agent_pos[1]] = 1.0
-        self._write_common_channels(obs)
-        return obs
 
     def _local_observation(self) -> np.ndarray:
         v = self.view_size
@@ -291,10 +273,8 @@ class TransportEnv:
 
     def valid_action_mask(self, mode: str = "task") -> np.ndarray:
         """Return the action mask used by a model-facing controller."""
-        if mode not in {"task", "valid", "none"}:
-            raise ValueError("mask mode must be 'task', 'valid', or 'none'.")
-        if mode == "none":
-            return np.ones(self.action_space_n, dtype=bool)
+        if mode not in {"task", "valid"}:
+            raise ValueError("mask mode must be 'task' or 'valid'; unmasked action selection is not supported.")
 
         mask = np.zeros(self.action_space_n, dtype=bool)
         if mode == "task" and (not self.carrying and self.object_pos == self.agent_pos):
@@ -310,7 +290,10 @@ class TransportEnv:
                 mask[action] = True
         if not self.carrying and self.object_pos == self.agent_pos:
             mask[4] = True
-        if mode == "valid" and self.carrying:
+        # "valid" means semantically valid task actions, not merely executable
+        # actions.  Early DROP outside the goal is classified as invalid by step(),
+        # so exposing it here creates a pickup/drop reward exploit.
+        if self.carrying and self.agent_pos == self.goal_pos:
             mask[5] = True
         return mask
 

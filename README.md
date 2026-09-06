@@ -1,173 +1,151 @@
 # TFP — Traveling Fox Problems
 
-**A compact PyTorch research framework for Deep Reinforcement Learning, local robotic decision-making, and reproducible behavior analysis.**
+**A compact PyTorch benchmark for partially observed transport, PPO memory, exploration, and anti-deadlock research.**
 
-TFP is designed for researchers who want a faster experimental loop than a full physics simulator while retaining meaningful robotics structure: partial observation, object interaction, navigation, topology variation, train/test separation, deterministic evaluation seeds, behavior diagnostics, and model deployment cost. The first benchmark, **Fox Transport · Local**, asks a small robot to find a cargo object, pick it up, and deliver it to a destination under a fixed 5×5 local observation.
+TFP is a small embodied-RL testbed for rapid controlled experiments before moving to larger simulators or physical robots. The agent receives a local observation, must locate cargo, execute `PICKUP`, navigate to the goal, and execute `DELIVER`. The benchmark is designed to expose perceptual aliasing, recurrent-memory limits, interaction-learning difficulty, exploration failures, and deterministic local policy cycles.
 
-![TFP Studio](assets/tfp_studio.png)
+## Demo
 
-## Research focus
+![TFP transport demo](assets/demo.png)
 
-TFP keeps the environment small enough for rapid iteration but exposes common RL research variables as independent plugins:
+*Example local-view transport episode rendered by the built-in visualizer.*
 
-- **Models** — feed-forward CNNs, model-owned memory, inference controllers, or custom architectures.
-- **Policies** — PPO is included; additional policy plugins can be added without rewriting tasks.
-- **Rewards** — dense and sparse transport rewards are provided as replaceable modules.
-- **Tasks** — named tasks own their maps, observation rules, and evaluation seeds.
-- **Evaluation** — fixed map × seed testing reports success, steps, return, path efficiency, behavior cycles, state revisits, model size, and inference latency.
+## Benchmark
 
-The framework is intended for fast hypothesis testing before moving promising ideas to MuJoCo, Isaac Lab, Gazebo, or real hardware.
-
-## Fox Transport · Local
-
-**Task ID:** `TFP-FoxTransport-Local`  
-**Short code:** `FOX-TR-L1`
-
-A fox robot receives a compact `10×5×5` local tensor and must complete **search → pickup → transport → delivery**. One object can be carried at a time. Maps contain walls, shelves, partitions, corridors, rooms, and mixed layouts designed to create local visual ambiguity without requiring a large simulator.
-
-![Fox Transport visualizer](assets/fox_transport_visualizer.png)
-
-| Benchmark component | Setting |
+| Component | Setting |
 |---|---:|
+| Task | `TFP-FoxTransport-Local` (`FOX-TR-L1`) |
+| Observation | local `10×5×5` tensor |
+| Actions | four moves + `PICKUP` + `DELIVER` |
 | Training maps | 54 |
 | Unseen test maps | 18 |
 | Map sizes | 10×10, 15×15, 20×20 |
 | Topology families | aisle, partition, blocks, mixed, rooms, zigzag |
-| Default evaluation seeds | 10 |
-| Fixed evaluation episodes | **180** |
-| Local observation | `10×5×5` |
+| Formal seeds | 10 per map |
+| Formal episodes | **180** |
 
-Every unseen map is evaluated with the same deterministic seed set. This prevents one favorable random episode from dominating a model comparison and makes topology- and scale-level analysis straightforward.
+Formal comparisons should use the same map × seed matrix, checkpoint role, action-mask protocol, and evaluation reward unless one of those variables is the intended ablation.
 
-## Quick start
+## Action masks
 
-### Windows
+TFP supports two explicit mask protocols:
 
-```bat
-setup_conda_env.bat
-select_tfp_env.bat
-launch_tfp.bat
-```
+- **`task`** — geometric validity plus task supervision. On the cargo cell, `PICKUP` becomes the only available action. While carrying cargo on the goal, `DELIVER` becomes the only available action.
+- **`valid`** — semantically valid actions without forced interaction. On cargo, the policy may `PICKUP` or move away. On the goal while carrying, the policy may `DELIVER` or move away. Early off-goal `DROP` is not exposed because the environment classifies it as invalid.
 
-`select_tfp_env.bat` stores the selected Conda environment in `config/conda_env.txt`; the launcher therefore uses the requested environment instead of whichever Python happens to be on `PATH`. In Studio, select **CUDA** to require a CUDA-capable PyTorch runtime. If CUDA is unavailable, TFP reports the mismatch instead of silently changing devices.
+`task` and `valid` answer different research questions. `task` isolates navigation and memory under supervised interaction timing; `valid` requires the learned policy to solve both navigation and interaction timing. Training configuration is frozen at run start, and checkpoints preserve the mask used during training.
 
-### Linux
+## Rewards
 
-```bash
-bash launch_tfp.sh
-```
+- `001_dense_transport` — dense transport baseline.
+- `001_sparse_transport` — task-event reward with minimal shaping.
+- `002_cycle_safe_transport` — symmetric geodesic shaping that makes immediate progress/regress loops net negative after step cost.
+- `003_valid_interaction_transport` — valid-mask study reward with a small opportunity cost for leaving an available `PICKUP` or `DELIVER` interaction while preserving policy choice.
 
-The Studio provides four main research views:
+The current `valid` mask is semantically aligned with `step()`: off-goal drop is not exposed. This prevents a pickup/drop reward loop in which repeated pickup bonuses could compete with actual delivery.
 
-- **Train** — compose Task × Model × Policy × Reward experiments and configure PPO.
-- **Evaluate** — run data-only, live-display, or live-display + MP4 evaluation.
-- **Compare** — compare saved runs in one sortable table.
-- **Research Plugins** — inspect and extend models, policies, rewards, and tasks.
+## Active models
 
-Training saves the **best validation checkpoint** as `<model>.pt` and the final optimization state as `<model>.last.pt`. Best-model selection uses a deterministic validation subset built from training layouts; the unseen test suite is not used for checkpoint selection.
+| ID | Model | Research role |
+|---|---|---|
+| 001 | `001_simple_cnn` | feed-forward visual PPO baseline |
+| 002 | `002_simple_cnn_tabu` | baseline + short-cycle inference filter |
+| 003 | `003_action_memory_cnn` | explicit finite action history |
+| 004 | `004_simple_cnn_tabux` | baseline + local-basin TabuX escape |
+| 005 | `005_action_memory_tabux_cnn` | action memory + TabuX |
+| 006 | `006_ppo_gru_bootstrap` | CNN checkpoint → GRU residual fine-tuning |
+| 007 | `007_ppo_gru_action_memory` | recurrent action-memory baseline |
+| 008 | `008_ppo_gru_episodic_count` | GRU + episodic novelty |
+| 009 | `009_ppo_gru_action_memory_tabux` | GRU action memory + TabuX |
+| 010 | `010_ppo_gru_gobi` | GRU + compact GoBI-style exploration |
 
-## Extending TFP
+## Key model design notes
 
-A researcher can add a model by placing a file such as:
+### `001_simple_cnn`
 
-```text
-tfp/models/my_model.py
-```
+`001_simple_cnn` is the minimum learned visual policy and the main architectural control. Three lightweight convolutional stages encode the fixed local tensor into a compact feature, followed by independent PPO actor and value heads. The model has no recurrent state, explicit action history, intrinsic reward, or inference-time search controller. This makes it useful for separating representation capacity from protocol effects. Under `task`, interaction timing is effectively supplied by the mask; under `valid`, the same network must learn when to execute `PICKUP` and `DELIVER` from observation channels that indicate interaction availability. The architecture should therefore remain fixed when studying mask, reward, checkpoint, or evaluation changes. Any large change in its behavior is easier to attribute to the experimental protocol than to hidden temporal state. It also serves as the first regression model for training/evaluation consistency and the reference point for memory and anti-deadlock extensions.
 
-and implementing `MODEL_SPEC` plus `create_model(observation_shape, action_count)`. Stateless models need only `forward`. Models with internal behavior memory can optionally implement model-owned hooks such as action-memory context, while inference-only controllers can rewrite greedy deployment actions without modifying PPO sampling. The environment observation shape remains unchanged.
+### `002_simple_cnn_tabu`
 
-The same plugin pattern is used for:
+`002_simple_cnn_tabu` keeps the trainable neural network identical to the Simple CNN and adds a small inference-only tabu mechanism. The controller tracks recent actions and detects short periodic motifs such as LEFT↔RIGHT or UP↔DOWN. When the greedy policy proposes an action that would continue a detected short cycle, that action is temporarily suppressed and the best remaining legal action is selected. PPO training is unchanged, so this branch isolates the effect of a deterministic deployment-time cycle breaker from improvements in representation learning. The mechanism is intentionally narrow: it can interrupt obvious two-action oscillations but has limited understanding of a broader local decision basin and may escape for one step only to return immediately. Tabu is therefore a low-complexity anti-deadlock baseline. If cycle count decreases without a corresponding improvement in success or path efficiency, the result suggests that the controller is suppressing a visible symptom rather than solving navigation or interaction reasoning.
 
-```text
-tfp/models/
-tfp/policies/
-tfp/rewards/
-tfp/tasks/
-```
+### `003_action_memory_cnn`
 
-See [`docs/MODEL_PLUGIN_GUIDE.md`](docs/MODEL_PLUGIN_GUIDE.md) and [`docs/EXPERIMENT_CHECKLIST.md`](docs/EXPERIMENT_CHECKLIST.md).
+`003_action_memory_cnn` tests whether a compact finite behavioral history can reduce local-observation aliasing without using a recurrent network. The local tensor is encoded by the lightweight CNN, while recent executed actions are embedded and summarized into a small history feature. Visual and action-history features are fused before the PPO actor and value heads. The exact history context used during rollout is stored and replayed during optimization, so shuffled PPO minibatches do not reconstruct a different temporal context from the one that generated the original action. This model is useful when two local scenes look similar but were reached through different recent trajectories. Its memory remains finite and explicit, making it easier to inspect than a GRU and preventing hidden state from accumulating arbitrarily long context. The branch therefore separates the question “does recent behavior provide useful state information?” from the stronger question “is learned recurrent state required for the task?”
 
-## Built-in model research
+### `004_simple_cnn_tabux`
 
-### 1. `simple_cnn_001` — visual RL baseline
+`004_simple_cnn_tabux` combines the unchanged Simple CNN with a stronger inference-only escape controller. TabuX maintains a compact trace of recent behavior, detects repeated local basins rather than only immediate ABAB motifs, and applies temporary tabu tenure to actions or transitions that would continue or rapidly re-enter the basin. An aspiration rule can release a tabu choice when it becomes sufficiently preferable, preventing the controller from becoming permanently rigid. Because TabuX is applied during greedy evaluation rather than PPO optimization, the learned CNN and training objective remain directly comparable to the baseline. This makes the model useful both as an engineering safeguard and as a diagnostic probe. Improvement over `001_simple_cnn` indicates that part of the failure set is caused by deterministic local-policy traps rather than missing visual capacity. TabuX should not be interpreted as learned exploration: it can redirect an action sequence, but it does not learn task semantics, long-horizon planning, or a global navigation model.
 
-`simple_cnn_001` establishes the minimum learned baseline for Fox Transport. It uses three small convolutional layers followed by a 128-dimensional shared feature layer and separate policy and value heads. The model receives only the current local observation; it has no recurrent state, action history, map memory, or hand-designed escape rule. This intentionally exposes the behavior of a reactive visual PPO policy under partial observation. The model is small enough to train quickly and makes failures easy to interpret: when two local observations look similar, the greedy policy may repeatedly select the same high-logit action or oscillate between inverse actions. Its role is therefore not to maximize benchmark performance, but to provide a controlled reference for asking whether additional behavior memory or inference-time search priors solve identifiable robotic failure modes. The same trained weights are reused by the Tabu-based variants so controller effects can be measured without retraining the underlying CNN.
+### `007_ppo_gru_action_memory`
 
-### 2. `simple_cnn_tabu_002` — short action-cycle suppression
+`007_ppo_gru_action_memory` is the primary learned temporal model. A compact CNN extracts the local visual feature, a GRU maintains recurrent state, and an explicit embedding of recent actions provides a direct short-term behavioral record. The two memory paths are complementary: the GRU can compress longer temporal context, while the action sequence does not need to be reconstructed implicitly inside hidden state. PPO optimization uses rollout-length truncated backpropagation through time and preserves the recurrent context that actually generated each action, with state reset at episode boundaries. The architecture directly targets perceptual aliasing caused by the 5×5 local view. However, recurrent memory does not guarantee escape from deterministic local cycles. A GRU can itself settle into a stable repeated trajectory if policy logits and reward make the loop locally self-consistent. `009_ppo_gru_action_memory_tabux` therefore keeps the learned recurrent architecture while adding an external TabuX controller to isolate residual inference-time deadlocks.
 
-`simple_cnn_tabu_002` keeps the trainable neural network identical to the baseline and applies Tabu logic only during greedy evaluation or deployment. PPO training is untouched. The controller remembers a short sequence of executed actions and detects periodic motifs such as `LEFT→RIGHT→LEFT→RIGHT`, repeated single actions, short three-action cycles, and interaction loops such as `PICKUP→DROP→PICKUP→DROP`. When the next neural action would continue the detected motif, the controller selects the highest-scoring legal alternative from the original CNN logits. This design tests a narrow hypothesis: some deployment failures are not failures of object recognition or value learning, but persistent local action selection loops. Because the controller does not read the hidden map, oracle path, or privileged position, it remains compatible with the partially observed task. Its limitation is equally important: once the robot makes one escape action, the original short-cycle memory may decay quickly enough for the policy to re-enter the same local trap from a neighboring state.
+### `008_ppo_gru_episodic_count`
 
-### 3. `action_memory_cnn_003` — learnable action-history memory
+`008_ppo_gru_episodic_count` augments compact recurrent PPO with a lightweight episodic-count novelty signal. Within each episode, local observation signatures are counted, and rarely visited signatures receive a larger intrinsic bonus using an inverse-count style schedule. The intrinsic coefficient is annealed so that exploration pressure is strongest early and gradually yields to the external transport objective. This design targets repeated-state and local-basin behavior without introducing a separate trainable curiosity network, keeping the experiment small and interpretable. Its limitation is deliberate: novelty does not imply useful task progress. An agent may discover new local observations while still failing to execute `PICKUP`, reach the goal, or resolve observation aliasing. Counts may also merge globally different states that appear identical inside the local view. Episodic Count should therefore be evaluated jointly with success, path efficiency, cycle events, and state revisit rate rather than treating intrinsic reward magnitude or raw novelty as evidence of effective exploration.
 
-`action_memory_cnn_003` tests whether a neural policy can learn useful short-term behavior context without storing previous images or using an LSTM. The visual encoder remains the same compact CNN, while the model internally records the last eight executed action IDs. Those actions are mapped through a learnable embedding, processed by a small temporal convolution, pooled into a behavior feature, and injected into the visual representation through a residual adapter. The environment still supplies exactly one `10×5×5` observation, so no task or observation code changes are required. During PPO collection, TFP stores the precise action-history context used at decision time; shuffled minibatch optimization therefore reconstructs the correct policy input instead of accidentally treating minibatch order as temporal order. This model explores a lightweight alternative to recurrent networks: memory represents **what the robot has recently done**, not a sequence of raw frames. It improves behavioral context with a modest parameter increase, although learned memory alone does not explicitly forbid revisiting a known local failure basin.
+## Deadlock analysis
 
-### 4. `simple_cnn_tabux_004` — local-basin TabuX controller
+Persistent LEFT↔RIGHT or UP↔DOWN behavior is best treated as a combined partial-observation, reward, and deterministic-policy problem. The 5×5 tensor can alias globally different locations, while greedy action selection turns small logit preferences into stable limit cycles. Asymmetric distance shaping can also make some progress/regress sequences artificially attractive; `002_cycle_safe_transport` removes that incentive through symmetric distance deltas. Memory addresses temporal ambiguity, whereas Tabu and TabuX directly target residual deterministic cycles. A credible anti-deadlock improvement should increase task success or path efficiency while also reducing cycle events and state revisit rate. A lower cycle count by itself is insufficient: a controller may merely replace one repeated behavior with another inefficient path. The benchmark therefore records task and behavior metrics together.
 
-`simple_cnn_tabux_004` extends the inference-only Tabu idea from action motifs to short-term **local-basin memory**. The neural weights remain identical to `simple_cnn_001`; only the deployment decision layer changes. TabuX integrates executed movement actions into a relative behavior coordinate and tracks recently revisited states and transitions. When repeated movement reveals a small two-, three-, or four-state basin, the controller assigns temporary tabu tenure to transitions that keep the robot inside the basin. Crucially, the tenure survives the first escape move. If the CNN immediately proposes an action that would return to the recently escaped region, TabuX can reject that action and choose the next legal neural alternative. An aspiration/relaxation rule prevents the controller from deadlocking the robot when every available action is temporarily tabu. TabuX uses no hidden map or oracle route; its memory is derived only from executed behavior. The model therefore isolates whether a lightweight search-inspired deployment prior can compensate for reactive-policy aliasing without changing RL training.
+## Experimental results template
 
-### 5. `action_memory_tabux_cnn_005` — learned behavior memory + TabuX
+Fill the table only with results generated under a declared common protocol.
 
-`action_memory_tabux_cnn_005` combines the two strongest behavior hypotheses in the project. During PPO training, it is exactly the learnable Action-Memory CNN: recent actions are embedded, temporally encoded, and fused into the CNN feature. During greedy deployment, an independent TabuX controller is added after the neural decision. The learned branch can adapt policy logits using recent behavior context, while TabuX provides an explicit short-term rule against returning to a recently identified local trap. These mechanisms operate at different levels and are intentionally kept separate: action memory is differentiable and learned from reward, whereas TabuX is non-differentiable, inference-only, and search-inspired. This model asks whether learned history and explicit anti-trap memory are complementary or redundant. Importantly, the combination is not assumed to be better. A learned policy may already alter its preferred escape direction, and a strong external controller can occasionally constrain that preference. The architecture is therefore useful as an ablation target for studying interactions between learned behavior representations and deployment-time decision priors.
+| Model | Train Reward | Train Mask | Eval Reward | Eval Mask | Success | Pickup | Mean Steps | Mean Return | Path Efficiency | Cycle Events | State Revisit | Inference ms |
+|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_simple_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `002_simple_cnn_tabu` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `003_action_memory_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `004_simple_cnn_tabux` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `005_action_memory_tabux_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `006_ppo_gru_bootstrap` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `007_ppo_gru_action_memory` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `008_ppo_gru_episodic_count` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `009_ppo_gru_action_memory_tabux` |  |  |  |  |  |  |  |  |  |  |  |  |
+| `010_ppo_gru_gobi` |  |  |  |  |  |  |  |  |  |  |  |  |
 
-## Initial controlled study
+## TFP Studio
 
-The packaged reference study uses the same **18 unseen maps × 10 deterministic seeds = 180 episodes**. `simple_cnn_001` and `action_memory_cnn_003` were trained for 32,768 PPO steps with training seed 7. The Tabu and TabuX variants reuse their corresponding trained neural weights and differ only in inference-time control where stated.
+![TFP Studio](assets/tfp_studio.png)
 
-| Method | Params | Success | Mean steps | Cycle events | State revisit | CPU inference* |
-|---|---:|---:|---:|---:|---:|---:|
-| Simple CNN 001 | 121.8k | 0.378 | 125.3 | 107.6 | 0.571 | 0.277 ms |
-| Simple CNN + Tabu 002 | 121.8k | 0.556 | 102.0 | 16.2 | 0.472 | 0.328 ms |
-| Action-Memory CNN 003 | 132.4k | 0.578 | 93.3 | 73.9 | 0.396 | 0.731 ms |
-| Simple CNN + TabuX 004 | 121.8k | **0.878** | 58.1 | 7.1 | 0.200 | 0.458 ms |
-| Action-Memory + TabuX 005 | 132.4k | 0.861 | **57.2** | **6.7** | **0.190** | 0.905 ms |
+TFP Studio provides **Train**, **Evaluate**, **Compare**, and **Research Plugins** views. Compare records the checkpoint protocol and the actual evaluation protocol separately:
 
-\* Inference latency is hardware- and runtime-specific and should only be compared on the same machine.
+- **PT Reward** / **Eval Reward**
+- **PT Mask** / **Eval Mask**
 
-### First experimental finding
+This makes deliberate reward or mask overrides visible instead of silently mixing incompatible runs. Evaluation supports the final training endpoint (`last`) and validation-selected (`best`) checkpoint roles.
 
-The first controlled study suggests that a major failure mode in this compact partially observed transport task is not simply insufficient visual capacity; it is **persistent local decision recurrence**. The reactive CNN succeeds in only 37.8% of the 180 unseen evaluation episodes and exhibits an average of 107.6 detected periodic cycle events with a 0.571 state-revisit rate. Adding the original inference-only Tabu filter to the same neural weights raises success to 55.6% and sharply reduces periodic action cycles, showing that a meaningful portion of the baseline error can be corrected without changing PPO training. The learnable Action-Memory CNN reaches 57.8% success and lowers state revisits further, supporting the hypothesis that recent executed actions contain useful context when local visual observations are ambiguous.
+## Reproducibility
 
-The stronger result comes from TabuX. By retaining short-term memory of recently repeated local states and transitions after the first escape action, the same baseline CNN reaches 87.8% success. This indicates that breaking an `A↔B` oscillation is not sufficient: the robot must also avoid immediately re-entering the small behavior basin that generated the oscillation. Action-Memory + TabuX reaches 86.1%, with the lowest mean steps and state-revisit rate, but does not exceed the simpler CNN + TabuX in success. That non-additive result is informative. Learned action history and explicit search-inspired constraints appear to solve overlapping parts of the decision problem, and a stronger external controller may occasionally override a useful learned preference.
+Checkpoints preserve task, model, policy, reward, action mask, seed, observation configuration, checkpoint role, and training configuration. Evaluation JSON files preserve the checkpoint protocol, evaluation protocol, hardware/runtime information, map × seed benchmark definition, per-episode records, and aggregate behavior metrics.
 
-These results are an **initial exploratory study, not a statistical conclusion**: the trainable models use one training seed and the reported latency comes from one runtime. The next formal experiment should repeat training across multiple independent seeds and ablate Tabu tenure, basin size, action-history length, reward design, and topology family. Raw CSV/JSON results are provided in `reference_results/initial_study/` for reproducibility.
+Large learned weights are ignored by Git through `*.pt`, `*.pth`, and `*.ckpt`. Only the five small packaged baseline reference checkpoints are explicitly allow-listed.
 
-## Evaluation and reproducibility
+Experiment templates are available under:
 
-Each evaluation stores both aggregate and per-episode data, including:
-
-- success and pickup rate;
-- episode steps, return, and oracle-relative path efficiency;
-- collisions and invalid actions;
-- periodic behavior-cycle events and interaction cycles;
-- state-revisit rate;
-- model parameter count and inference latency;
-- task, model, policy, reward, seed, checkpoint, Python, PyTorch, CUDA, and device metadata.
-
-Use the same fixed map × seed suite for method comparisons and repeat trainable methods with multiple independent training seeds before making statistical claims.
+- `experiments/anti_deadlock/`
+- `experiments/valid_mask/`
 
 ## Repository structure
 
 ```text
 Traveling-Fox-Problems/
 ├─ README.md
-├─ LICENSE
-├─ CITATION.cff
-├─ environment.yml
-├─ requirements.txt
 ├─ tfp_studio.py
-├─ launch_tfp.bat / launch_tfp.sh
-├─ config/
-├─ checkpoints/                 # packaged reference weights + local best/last outputs
+├─ assets/
+├─ checkpoints/
 ├─ docs/
 ├─ experiments/
 ├─ reference_results/
-│  └─ initial_study/
 ├─ results/
 ├─ tests/
 ├─ tools/
 └─ tfp/
    ├─ envs/
    ├─ evaluation/
+   ├─ intrinsic/
    ├─ models/
    ├─ policies/
    ├─ rewards/
@@ -175,10 +153,6 @@ Traveling-Fox-Problems/
    ├─ training/
    └─ visualization/
 ```
-
-## Scope
-
-TFP is a compact research environment, not a physics-accurate substitute for a full robotics simulator. It is intended to make small embodied-RL hypotheses inexpensive to test, inspect, and reproduce, then provide a clean path for transferring promising ideas to richer simulation or hardware.
 
 ## License
 

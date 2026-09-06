@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 .env/
 results/*
@@ -11,12 +12,14 @@ videos/*
 .vscode/
 .idea/
 
-# Keep the small reference checkpoints; ignore ad-hoc training outputs.
-checkpoints/*.pt
-checkpoints/**/*.pt
-!checkpoints/FOX-TR-L1/simple_cnn_001.pt
-!checkpoints/FOX-TR-L1/simple_cnn_tabu_002.pt
-!checkpoints/FOX-TR-L1/action_memory_cnn_003.pt
+# Learned weights / user checkpoints are ignored by default.
+*.pt
+*.pth
+*.ckpt
 
-!checkpoints/FOX-TR-L1/simple_cnn_tabux_004.pt
-!checkpoints/FOX-TR-L1/action_memory_tabux_cnn_005.pt
+# Only the five small packaged baseline reference checkpoints are tracked.
+!checkpoints/FOX-TR-L1/001_simple_cnn.pt
+!checkpoints/FOX-TR-L1/002_simple_cnn_tabu.pt
+!checkpoints/FOX-TR-L1/003_action_memory_cnn.pt
+!checkpoints/FOX-TR-L1/004_simple_cnn_tabux.pt
+!checkpoints/FOX-TR-L1/005_action_memory_tabux_cnn.pt
