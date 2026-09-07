@@ -1,4 +1,4 @@
-# TFP — Traveling Fox Problems
+# TFP — Traveling Fox Problems : A Lightweight POMDP Benchmark for Reinforcement Learning
 
 **A compact PyTorch benchmark for partially observed transport, PPO memory, exploration, and anti-deadlock research.**
 
