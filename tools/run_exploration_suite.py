@@ -11,9 +11,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import torch
-from tfp.envs.transport_env import TransportEnv
 from tfp.evaluation.protocol import evaluate_policy, load_checkpoint_model
-from tfp.tasks import get_task
+from tfp.tasks import create_task_env, get_task
 from tfp.training.ppo import PPOConfig, train_ppo
 from tfp.utils import discover_maps
 
@@ -82,6 +81,7 @@ def main() -> None:
             policy_module=args.policy,
             device=args.device,
             experiment_tag=args.mode,
+            task_id=task.env_id,
         )
         train_ppo(model_name, train_maps, test_maps, ckpt, cfg, log_callback=print)
         device = torch.device(
@@ -89,8 +89,8 @@ def main() -> None:
             else ("cpu" if args.device == "auto" else args.device)
         )
         model, payload = load_checkpoint_model(ckpt, device)
-        env = TransportEnv(
-            test_maps,
+        env = create_task_env(
+            task.env_id, test_maps,
             observation_mode="local",
             view_size=5,
             seed=args.seed + 9000,

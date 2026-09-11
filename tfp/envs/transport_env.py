@@ -43,8 +43,8 @@ class TransportEnv:
     ) -> None:
         if observation_mode != "local":
             raise ValueError("TFP supports local observation only.")
-        if view_size % 2 == 0 or view_size < 3:
-            raise ValueError("view_size must be an odd integer >= 3.")
+        if view_size not in {5, 7}:
+            raise ValueError("Fox Transport supports view_size 5 or 7.")
         if not map_paths:
             raise ValueError("At least one map path is required.")
 
@@ -55,7 +55,7 @@ class TransportEnv:
         self.max_steps = max_steps or 120
         self.rng = np.random.default_rng(seed)
         self.reward_module = normalize_reward_name(reward_module)
-        self.reward_spec, reward_factory = load_reward_plugin(self.reward_module)
+        self.reward_spec, reward_factory = load_reward_plugin(self.reward_module, task_id=self.TASK_ID)
         self.reward_function = reward_factory()
 
         self.action_space_n = 6
@@ -355,4 +355,14 @@ class TransportEnv:
             "path_efficiency": float(efficiency),
             "last_reward": self.last_reward,
             "last_distance_delta": self.last_distance_delta,
+            "pickups": 1 if self.pickup_step is not None else 0,
+            "items_total": 1,
+            "items_delivered": 1 if success else 0,
+            "completion_rate": 1.0 if success else 0.0,
+            "behavior_state": (self.agent_pos, bool(self.carrying), self.object_pos),
         }
+
+    def render_entities(self) -> dict[str, list[tuple[int, Tuple[int, int]]]]:
+        goals = [(0, self.goal_pos)]
+        objects = [] if self.object_pos is None else [(0, self.object_pos)]
+        return {"objects": objects, "goals": goals}

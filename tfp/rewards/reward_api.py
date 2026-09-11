@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Callable, Protocol
 
+from tfp.tasks import default_task_id, get_task
+
 
 @dataclass(frozen=True)
 class RewardSpec:
@@ -37,25 +39,43 @@ def _module_to_spec(module: ModuleType) -> RewardSpec | None:
     return raw if isinstance(raw, RewardSpec) else RewardSpec(**raw)
 
 
-def discover_reward_plugins() -> dict[str, RewardSpec]:
-    package = importlib.import_module("tfp.rewards")
+def _task_id(task_id: str | None) -> str:
+    return task_id or default_task_id()
+
+
+def discover_reward_plugins(task_id: str | None = None) -> dict[str, RewardSpec]:
+    spec = get_task(_task_id(task_id))
+    package = importlib.import_module(spec.reward_package)
     output: dict[str, RewardSpec] = {}
     for module_info in pkgutil.iter_modules(package.__path__):
-        if module_info.name.startswith("_") or module_info.name == "reward_api":
+        if module_info.name.startswith("_"):
             continue
-        full_name = f"tfp.rewards.{module_info.name}"
+        full_name = f"{spec.reward_package}.{module_info.name}"
         importlib.invalidate_caches()
         module = importlib.reload(sys.modules[full_name]) if full_name in sys.modules else importlib.import_module(full_name)
-        spec = _module_to_spec(module)
-        if spec is not None:
-            output[module_info.name] = spec
+        reward_spec = _module_to_spec(module)
+        if reward_spec is not None:
+            output[module_info.name] = reward_spec
     return dict(sorted(output.items()))
 
 
-def load_reward_plugin(module_name: str) -> tuple[RewardSpec, Callable[[], RewardFunction]]:
+def load_reward_plugin(
+    module_name: str,
+    task_id: str | None = None,
+) -> tuple[RewardSpec, Callable[[], RewardFunction]]:
     module_name = normalize_reward_name(module_name)
-    module = importlib.import_module(f"tfp.rewards.{module_name}")
-    spec = _module_to_spec(module)
-    if spec is None:
-        raise ValueError(f"tfp.rewards.{module_name} must define REWARD_SPEC and create_reward().")
-    return spec, getattr(module, "create_reward")
+    spec = get_task(_task_id(task_id))
+    full_name = f"{spec.reward_package}.{module_name}"
+    try:
+        module = importlib.import_module(full_name)
+    except ModuleNotFoundError as exc:
+        if exc.name == full_name:
+            raise ValueError(
+                f"Reward '{module_name}' is not registered for task '{spec.env_id}'. "
+                f"Available: {', '.join(discover_reward_plugins(spec.env_id))}"
+            ) from exc
+        raise
+    reward_spec = _module_to_spec(module)
+    if reward_spec is None:
+        raise ValueError(f"{full_name} must define REWARD_SPEC and create_reward().")
+    return reward_spec, getattr(module, "create_reward")

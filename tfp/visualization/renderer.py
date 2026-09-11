@@ -50,21 +50,40 @@ class FoxRenderer:
                     draw.line((x0, y1, x1, y1), fill=(230, 233, 238), width=1)
                     draw.line((x1, y0, x1, y1), fill=(230, 233, 238), width=1)
 
-        gr, gc = env.goal_pos
-        gx0, gy0 = ox + gc * tile, oy + gr * tile
-        pad = max(2, tile // 7)
-        draw.rounded_rectangle(
-            (gx0 + pad, gy0 + pad, gx0 + tile - pad, gy0 + tile - pad),
-            radius=max(3, tile // 5), fill=(104, 187, 139), outline=(59, 139, 98), width=max(1, tile // 12),
-        )
-        draw.text((gx0 + tile * 0.34, gy0 + tile * 0.23), "G", fill=(255, 255, 255), font=self.font_small)
+        entities = env.render_entities() if hasattr(env, "render_entities") else {"objects": [], "goals": []}
+        color_palette = [
+            (220, 82, 82),   # red
+            (83, 166, 112),  # green
+            (72, 128, 201),  # blue
+            (224, 179, 63),  # yellow
+            (151, 101, 190), # purple
+        ]
+        for color, (gr, gc) in entities.get("goals", []):
+            gx0, gy0 = ox + gc * tile, oy + gr * tile
+            pad = max(2, tile // 7)
+            if env.TASK_CODE == "FOX-TR-L1":
+                fill, outline = (104, 187, 139), (59, 139, 98)
+            else:
+                base = color_palette[int(color) % len(color_palette)]
+                fill = tuple(min(255, int(v + (255 - v) * 0.55)) for v in base)
+                outline = base
+            draw.rounded_rectangle(
+                (gx0 + pad, gy0 + pad, gx0 + tile - pad, gy0 + tile - pad),
+                radius=max(3, tile // 5), fill=fill, outline=outline, width=max(1, tile // 10),
+            )
 
-        if env.object_pos is not None:
-            rr, rc = env.object_pos
+        for color, (rr, rc) in entities.get("objects", []):
             x0, y0 = ox + rc * tile, oy + rr * tile
             p = max(3, tile // 5)
-            draw.rounded_rectangle((x0 + p, y0 + p, x0 + tile - p, y0 + tile - p), radius=max(2, tile // 8), fill=(244, 178, 75), outline=(181, 116, 36), width=max(1, tile // 12))
-            draw.line((x0 + tile // 2, y0 + p, x0 + tile // 2, y0 + tile - p), fill=(181, 116, 36), width=max(1, tile // 14))
+            if env.TASK_CODE == "FOX-TR-L1":
+                fill, outline = (244, 178, 75), (181, 116, 36)
+            else:
+                fill = color_palette[int(color) % len(color_palette)]
+                outline = tuple(max(0, int(v * 0.65)) for v in fill)
+            draw.rounded_rectangle(
+                (x0 + p, y0 + p, x0 + tile - p, y0 + tile - p),
+                radius=max(2, tile // 8), fill=fill, outline=outline, width=max(1, tile // 12),
+            )
 
         ar, ac = env.agent_pos
         x0, y0 = ox + ac * tile, oy + ar * tile
@@ -80,7 +99,12 @@ class FoxRenderer:
         draw.ellipse((cx + radius // 3 - eye_r, cy - eye_r, cx + radius // 3 + eye_r, cy + eye_r), fill=(34, 37, 43))
         if env.carrying:
             box_r = max(3, tile // 6)
-            draw.rounded_rectangle((cx - box_r, cy + radius // 3, cx + box_r, cy + radius), radius=2, fill=(244, 178, 75), outline=(181, 116, 36))
+            if hasattr(env, "carrying_color") and env.carrying_color is not None:
+                carried_fill = color_palette[int(env.carrying_color) % len(color_palette)]
+                carried_outline = tuple(max(0, int(v * 0.65)) for v in carried_fill)
+            else:
+                carried_fill, carried_outline = (244, 178, 75), (181, 116, 36)
+            draw.rounded_rectangle((cx - box_r, cy + radius // 3, cx + box_r, cy + radius), radius=2, fill=carried_fill, outline=carried_outline)
 
         if env.observation_mode == "local":
             view_radius = env.view_size // 2

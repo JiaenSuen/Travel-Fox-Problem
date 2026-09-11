@@ -9,6 +9,8 @@ from typing import Callable
 
 from torch import nn
 
+from tfp.tasks import default_task_id, get_task
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -39,8 +41,6 @@ LEGACY_MODEL_ALIASES = {
 }
 
 
-
-
 def normalize_model_name(module_name: str) -> str:
     return LEGACY_MODEL_ALIASES.get(str(module_name), str(module_name))
 
@@ -50,51 +50,57 @@ def _module_to_spec(module: ModuleType) -> ModelSpec | None:
     factory = getattr(module, "create_model", None)
     if raw is None or not callable(factory):
         return None
-    if isinstance(raw, ModelSpec):
-        return raw
-    return ModelSpec(**raw)
+    return raw if isinstance(raw, ModelSpec) else ModelSpec(**raw)
 
 
-def discover_model_plugins() -> dict[str, ModelSpec]:
-    """Discover user model files placed directly in ``tfp/models``.
+def _task_id(task_id: str | None) -> str:
+    return task_id or default_task_id()
 
-    A plugin only needs ``MODEL_SPEC`` and ``create_model``. Framework files that do
-    not expose those names are ignored automatically.
+
+def discover_model_plugins(task_id: str | None = None) -> dict[str, ModelSpec]:
+    """Discover model plugins owned by one task.
+
+    Files live in ``tfp/tasks/<task>/models``. Shared neural building blocks may stay
+    in ``tfp.models`` but experiment-facing model definitions are task-scoped.
     """
-    package = importlib.import_module("tfp.models")
+    spec = get_task(_task_id(task_id))
+    package = importlib.import_module(spec.model_package)
     output: dict[str, ModelSpec] = {}
     for module_info in pkgutil.iter_modules(package.__path__):
         if module_info.name.startswith("_"):
             continue
-        full_name = f"tfp.models.{module_info.name}"
+        full_name = f"{spec.model_package}.{module_info.name}"
         importlib.invalidate_caches()
         module = importlib.reload(sys.modules[full_name]) if full_name in sys.modules else importlib.import_module(full_name)
-        spec = _module_to_spec(module)
-        if spec is not None:
-            output[module_info.name] = spec
+        model_spec = _module_to_spec(module)
+        if model_spec is not None:
+            output[module_info.name] = model_spec
     return dict(sorted(output.items()))
 
 
-def load_model_plugin(module_name: str) -> tuple[ModelSpec, Callable[[tuple[int, int, int], int], nn.Module]]:
+def load_model_plugin(
+    module_name: str,
+    task_id: str | None = None,
+) -> tuple[ModelSpec, Callable[[tuple[int, int, int], int], nn.Module]]:
     module_name = normalize_model_name(module_name)
-    module = importlib.import_module(f"tfp.models.{module_name}")
-    spec = _module_to_spec(module)
-    if spec is None:
-        raise ValueError(
-            f"tfp.models.{module_name} is not a model plugin. "
-            "Define MODEL_SPEC and create_model(observation_shape, action_count)."
-        )
-    return spec, getattr(module, "create_model")
+    spec = get_task(_task_id(task_id))
+    full_name = f"{spec.model_package}.{module_name}"
+    try:
+        module = importlib.import_module(full_name)
+    except ModuleNotFoundError as exc:
+        if exc.name == full_name:
+            raise ValueError(
+                f"Model '{module_name}' is not registered for task '{spec.env_id}'. "
+                f"Available: {', '.join(discover_model_plugins(spec.env_id))}"
+            ) from exc
+        raise
+    model_spec = _module_to_spec(module)
+    if model_spec is None:
+        raise ValueError(f"{full_name} must define MODEL_SPEC and create_model(observation_shape, action_count).")
+    return model_spec, getattr(module, "create_model")
 
 
 def rollout_forward(model: nn.Module, x, env_ids):
-    """Forward during environment interaction with optional model-owned memory.
-
-    A stateful plugin may expose ``act_forward(x, env_ids, update=True)`` and
-    return ``(logits, value, context_before)``. For example, Action-Memory CNN 003
-    returns the recent action-token history. Stateless models require no changes
-    and continue to use ``forward(x)``.
-    """
     hook = getattr(model, "act_forward", None)
     if callable(hook):
         return hook(x, tuple(int(v) for v in env_ids), update=True)
@@ -103,7 +109,6 @@ def rollout_forward(model: nn.Module, x, env_ids):
 
 
 def peek_forward(model: nn.Module, x, env_ids):
-    """Value/logit forward that does not advance optional model-owned memory."""
     hook = getattr(model, "act_forward", None)
     if callable(hook):
         return hook(x, tuple(int(v) for v in env_ids), update=False)
@@ -112,7 +117,6 @@ def peek_forward(model: nn.Module, x, env_ids):
 
 
 def optimization_forward(model: nn.Module, x, context=None):
-    """PPO minibatch forward using the model context captured at rollout time."""
     hook = getattr(model, "training_forward", None)
     if callable(hook) and context is not None:
         return hook(x, context)

@@ -41,12 +41,13 @@ class TFPExplorationModelTests(unittest.TestCase):
             self.assertTrue(np.isfinite(module.update(obs, nxt, actions)))
 
     def test_bootstrap_exactly_matches_cnn_at_zero_progress(self):
+        # Weight files are intentionally excluded from Git. Use an in-memory mature
+        # feed-forward state to verify exact bootstrap transfer semantics.
         base = load_model_plugin('001_simple_cnn')[1]((10, 5, 5), 6)
-        ck = torch.load(ROOT / 'checkpoints/FOX-TR-L1/001_simple_cnn.pt', map_location='cpu')
-        base.load_state_dict(ck['model_state'])
+        state = base.state_dict()
         base.eval()
         gru = load_model_plugin('006_ppo_gru_bootstrap')[1]((10, 5, 5), 6)
-        gru.initialize_from_feedforward_state(ck['model_state'])
+        gru.initialize_from_feedforward_state(state)
         gru.set_training_progress(0.0)
         gru.eval()
         x = torch.randn((3, 10, 5, 5))

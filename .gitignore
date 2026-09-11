@@ -1,25 +1,88 @@
+# Python / test caches
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.venv/
-.env/
-results/*
-!results/.gitkeep
-videos/*
-!videos/.gitkeep
-*.mp4
-.DS_Store
-.vscode/
-.idea/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Learned weights / user checkpoints are ignored by default.
+# Local environments and machine-specific runtime state
+.venv/
+venv/
+env/
+.conda/
+.env
+.env.*
+!.env.example
+config/runtime.local.json
+config/*private*.json
+*.local.json
+
+# Credentials / secrets / private keys
+.secrets/
+secrets/
+private/
+private_data/
+local_data/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials*.json
+service-account*.json
+secrets*.json
+auth*.json
+*api_key*
+*apikey*
+*access_token*
+*refresh_token*
+
+# Learned weights and exported inference engines
 *.pt
 *.pth
 *.ckpt
+*.safetensors
+*.onnx
+*.engine
+*.trt
+checkpoints/**
+!checkpoints/.gitkeep
 
-# Only the five small packaged baseline reference checkpoints are tracked.
-!checkpoints/FOX-TR-L1/001_simple_cnn.pt
-!checkpoints/FOX-TR-L1/002_simple_cnn_tabu.pt
-!checkpoints/FOX-TR-L1/003_action_memory_cnn.pt
-!checkpoints/FOX-TR-L1/004_simple_cnn_tabux.pt
-!checkpoints/FOX-TR-L1/005_action_memory_tabux_cnn.pt
+# Experiment outputs: keep generated README/summary only
+results/**
+!results/.gitkeep
+!results/*/
+!results/*/README.md
+!results/*/summary.png
+
+# Evaluation media / recordings
+videos/**
+!videos/.gitkeep
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.m4v
+
+# Logs / temporary exports / crash dumps
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.dmp
+core
+core.*
+
+# OS / editor metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.code-workspace

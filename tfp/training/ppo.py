@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import re
 from typing import Callable, Sequence
 
 import numpy as np
@@ -9,13 +10,12 @@ import torch
 from torch import nn
 from torch.distributions import Categorical
 
-from tfp.envs.transport_env import TransportEnv
 from tfp.checkpoints import resolve_checkpoint_path
 from tfp.models.model_api import load_model_plugin, optimization_forward, peek_forward, rollout_forward
 from tfp.intrinsic import load_intrinsic_plugin
 from tfp.policies import load_policy_plugin
 from tfp.runtime import resolve_device
-from tfp.tasks.fox_transport_local import DEFAULT_EVAL_SEEDS
+from tfp.tasks import create_task_env, get_task
 from tfp.utils import set_seed
 
 
@@ -52,22 +52,33 @@ def _distribution(logits: torch.Tensor, mask: torch.Tensor) -> Categorical:
     return Categorical(logits=logits.masked_fill(~mask, -1e9))
 
 
+def _map_size_key(path: Path) -> tuple[int, int]:
+    match = re.search(r"_(\d+)x(\d+)(?:\.|$)", path.name)
+    if not match:
+        return (10**9, 10**9)
+    return int(match.group(1)), int(match.group(2))
+
+
 def _maps_for_progress(all_maps: Sequence[Path], progress: float, curriculum: bool) -> list[Path]:
     if not curriculum:
         return list(all_maps)
+    size_groups = sorted({_map_size_key(p) for p in all_maps})
+    if not size_groups or size_groups[0][0] >= 10**9:
+        return list(all_maps)
     if progress < 0.33:
-        selected = [p for p in all_maps if "_10x10" in p.name]
+        allowed = set(size_groups[:1])
     elif progress < 0.66:
-        selected = [p for p in all_maps if "_10x10" in p.name or "_15x15" in p.name]
+        allowed = set(size_groups[: min(2, len(size_groups))])
     else:
-        selected = list(all_maps)
+        allowed = set(size_groups)
+    selected = [p for p in all_maps if _map_size_key(p) in allowed]
     return selected or list(all_maps)
 
 
 def _quick_eval(
     model: nn.Module,
     policy,
-    env: TransportEnv,
+    env,
     test_maps: Sequence[Path],
     device: torch.device,
     mask_mode: str,
@@ -76,7 +87,7 @@ def _quick_eval(
     successes: list[int] = []
     lengths: list[int] = []
     efficiencies: list[float] = []
-    seeds = DEFAULT_EVAL_SEEDS[:2]
+    seeds = get_task(env.TASK_ID).default_eval_seeds[:2]
     eval_env_id = (1_000_000,)
     with torch.no_grad():
         for map_path in test_maps:
@@ -112,8 +123,8 @@ def _selection_validation_maps(train_maps: Sequence[Path]) -> list[Path]:
     it avoids test leakage while keeping checkpoint selection fast.
     """
     selected: list[Path] = []
-    for size in ("10x10", "15x15", "20x20"):
-        group = sorted(p for p in train_maps if f"_{size}" in p.name)
+    for size in sorted({_map_size_key(p) for p in train_maps}):
+        group = sorted(p for p in train_maps if _map_size_key(p) == size)
         selected.extend(group[:2])
     return selected or list(train_maps[: min(6, len(train_maps))])
 
@@ -176,7 +187,7 @@ def train_ppo(
     if device.type == "cuda":
         torch.set_float32_matmul_precision("high")
 
-    model_spec, factory = load_model_plugin(model_module)
+    model_spec, factory = load_model_plugin(model_module, task_id=config.task_id)
     policy_spec, policy_factory = load_policy_plugin(config.policy_module)
     if model_spec.algorithm.lower() != "ppo":
         raise ValueError("The PPO trainer accepts PPO-compatible model plugins only.")
@@ -186,10 +197,13 @@ def train_ppo(
     if log_callback:
         log_callback(f"Protocol lock: action_mask={run_mask_mode} (immutable for this training run).")
 
+    task = get_task(config.task_id)
+    if config.view_size not in task.supported_view_sizes:
+        raise ValueError(f"{task.env_id} supports view sizes {task.supported_view_sizes}.")
     initial_maps = _maps_for_progress(train_maps, 0.0, config.curriculum)
     envs = [
-        TransportEnv(
-            initial_maps,
+        create_task_env(
+            config.task_id, initial_maps,
             observation_mode=config.observation_mode,
             view_size=config.view_size,
             seed=config.seed + i,
@@ -197,16 +211,16 @@ def train_ppo(
         )
         for i in range(config.num_envs)
     ]
-    test_env = TransportEnv(
-        test_maps,
+    test_env = create_task_env(
+        config.task_id, test_maps,
         observation_mode=config.observation_mode,
         view_size=config.view_size,
         seed=config.seed + 10000,
         reward_module=config.reward_module,
     )
     validation_maps = _selection_validation_maps(train_maps)
-    validation_env = TransportEnv(
-        validation_maps,
+    validation_env = create_task_env(
+        config.task_id, validation_maps,
         observation_mode=config.observation_mode,
         view_size=config.view_size,
         seed=config.seed + 20000,

@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import json
 import platform
-import sys
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -14,11 +13,11 @@ import numpy as np
 import torch
 from torch import nn
 
-from tfp.envs.transport_env import TransportEnv
 from tfp.evaluation.diagnostics import BehaviorDiagnostics
 from tfp.models.model_api import load_model_plugin, rollout_forward
 from tfp.policies import load_policy_plugin
-from tfp.tasks.fox_transport_local import DEFAULT_EVAL_SEEDS
+from tfp.reporting import build_task_report
+from tfp.tasks import get_task
 from tfp.visualization.renderer import FoxRenderer, LiveWindow, VideoRecorder
 
 ACTION_NAMES = ("UP", "DOWN", "LEFT", "RIGHT", "PICKUP", "DROP")
@@ -27,6 +26,7 @@ ACTION_NAMES = ("UP", "DOWN", "LEFT", "RIGHT", "PICKUP", "DROP")
 @dataclass
 class EpisodeRecord:
     task_id: str
+    task_code: str
     model: str
     policy: str
     reward: str
@@ -42,6 +42,10 @@ class EpisodeRecord:
     collisions: int
     invalid_actions: int
     pickup_step: int | None
+    pickups: int
+    items_total: int
+    items_delivered: int
+    completion_rate: float
     cycle_events: int
     interaction_cycle_events: int
     state_revisit_rate: float
@@ -57,6 +61,8 @@ class EvaluationSummary:
     mean_pickup_step: float
     mean_return: float
     mean_path_efficiency: float
+    mean_completion_rate: float
+    mean_items_delivered: float
     mean_collisions: float
     mean_invalid_actions: float
     mean_cycle_events: float
@@ -76,6 +82,8 @@ def _summarize(records: Sequence[EpisodeRecord]) -> EvaluationSummary:
         mean_pickup_step=float(np.mean([r.pickup_step for r in pickup_records])) if pickup_records else 0.0,
         mean_return=float(np.mean([r.total_return for r in records])) if records else 0.0,
         mean_path_efficiency=float(np.mean([r.path_efficiency for r in success_records])) if success_records else 0.0,
+        mean_completion_rate=float(np.mean([r.completion_rate for r in records])) if records else 0.0,
+        mean_items_delivered=float(np.mean([r.items_delivered for r in records])) if records else 0.0,
         mean_collisions=float(np.mean([r.collisions for r in records])) if records else 0.0,
         mean_invalid_actions=float(np.mean([r.invalid_actions for r in records])) if records else 0.0,
         mean_cycle_events=float(np.mean([r.cycle_events for r in records])) if records else 0.0,
@@ -105,18 +113,9 @@ def _save_results(
     else:
         csv_path.write_text("", encoding="utf-8")
 
-    by_map: dict[str, dict[str, float]] = {}
-    for map_name in sorted({r.map_name for r in records}):
-        subset = [r for r in records if r.map_name == map_name]
-        by_map[map_name] = asdict(_summarize(subset))
-    by_size: dict[str, dict[str, float]] = {}
-    for map_size in sorted({r.map_size for r in records}):
-        subset = [r for r in records if r.map_size == map_size]
-        by_size[map_size] = asdict(_summarize(subset))
-    by_family: dict[str, dict[str, float]] = {}
-    for family in sorted({r.map_family for r in records}):
-        subset = [r for r in records if r.map_family == family]
-        by_family[family] = asdict(_summarize(subset))
+    def grouped(field: str) -> dict[str, dict[str, float]]:
+        values = sorted({str(getattr(r, field)) for r in records})
+        return {value: asdict(_summarize([r for r in records if str(getattr(r, field)) == value])) for value in values}
 
     payload = {
         "metadata": metadata or {},
@@ -126,9 +125,9 @@ def _save_results(
             "seeds": len({r.seed for r in records}),
             "episodes": len(records),
         },
-        "by_map": by_map,
-        "by_size": by_size,
-        "by_family": by_family,
+        "by_map": grouped("map_name"),
+        "by_size": grouped("map_size"),
+        "by_family": grouped("map_family"),
         "records": [asdict(r) for r in records],
     }
     json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -137,10 +136,10 @@ def _save_results(
 
 def evaluate_policy(
     model: nn.Module,
-    env: TransportEnv,
+    env,
     maps: Sequence[Path],
     device: torch.device,
-    seeds: Iterable[int] = DEFAULT_EVAL_SEEDS,
+    seeds: Iterable[int] | None = None,
     action_mask_mode: str = "task",
     policy_module: str = "001_ppo_categorical",
     model_name: str = "unknown",
@@ -151,16 +150,19 @@ def evaluate_policy(
     progress_callback: Callable[[str], None] | None = None,
     run_metadata: dict[str, object] | None = None,
 ) -> tuple[EvaluationSummary, list[EpisodeRecord], tuple[Path, Path]]:
-    """Evaluate the complete fixed map x seed matrix."""
+    """Evaluate the complete fixed map × seed matrix and export task-scoped records."""
     if presentation not in {"data", "display", "video"}:
         raise ValueError("presentation must be 'data', 'display', or 'video'.")
 
+    task = get_task(env.TASK_ID)
     _, policy_factory = load_policy_plugin(policy_module)
     policy = policy_factory()
-    seeds = tuple(int(s) for s in seeds)
+    seeds = tuple(int(s) for s in (seeds if seeds is not None else task.default_eval_seeds))
+    task_output_dir = Path(output_dir) / task.code
+    task_video_dir = Path(video_dir) / task.code
     renderer = FoxRenderer() if presentation != "data" else None
     window = LiveWindow() if presentation != "data" else None
-    recorder = VideoRecorder(video_dir, fps=video_fps) if presentation == "video" else None
+    recorder = VideoRecorder(task_video_dir, fps=video_fps) if presentation == "video" else None
     records: list[EpisodeRecord] = []
     eval_env_id = (2_000_000,)
 
@@ -192,21 +194,14 @@ def evaluate_policy(
                         action = int(action_t.item())
                         obs, reward, terminated, truncated, info = env.step(action)
                         total_return += reward
-                        diagnostics.observe(
-                            action,
-                            (tuple(info.get("agent_pos", ())), bool(info.get("carrying", False)), info.get("object_pos")),
-                        )
+                        state_key = info.get("behavior_state", (tuple(info.get("agent_pos", ())), bool(info.get("carrying", False))))
+                        diagnostics.observe(action, state_key)
                         done = bool(terminated or truncated)
                         policy.observe(model, eval_env_id, (action,), (reward,), (done,))
 
                         if renderer is not None and visualize_episode:
                             status_open = bool(window.status_open) if window is not None else False
-                            frame = renderer.render(
-                                env,
-                                action_name=ACTION_NAMES[action],
-                                reward=reward,
-                                status_open=status_open,
-                            )
+                            frame = renderer.render(env, action_name=ACTION_NAMES[action], reward=reward, status_open=status_open)
                             if window is not None and not window.show(frame):
                                 presentation = "data"
                                 window.close()
@@ -215,23 +210,31 @@ def evaluate_policy(
                                 recorder.append(frame)
 
                         if done:
+                            map_name = str(info["map"])
+                            parts = Path(map_name).stem.split("_")
+                            map_family = parts[1] if len(parts) > 2 else "default"
                             record = EpisodeRecord(
                                 task_id=str(info.get("task_id", env.TASK_ID)),
+                                task_code=str(info.get("task_code", env.TASK_CODE)),
                                 model=model_name,
                                 policy=policy_module,
                                 reward=env.reward_module,
-                                map_name=str(info["map"]),
-                                map_family=str(info["map"]).split("_")[1] if "_" in str(info["map"]) else "unknown",
+                                map_name=map_name,
+                                map_family=map_family,
                                 map_size=f"{info['map_shape'][0]}x{info['map_shape'][1]}",
                                 seed=seed,
                                 success=int(info["success"]),
                                 steps=int(info["steps"]),
                                 total_return=float(total_return),
-                                oracle_steps=int(info["oracle_steps"]),
-                                path_efficiency=float(info["path_efficiency"]),
-                                collisions=int(info["collisions"]),
-                                invalid_actions=int(info["invalid_actions"]),
-                                pickup_step=info["pickup_step"],
+                                oracle_steps=int(info.get("oracle_steps", 0)),
+                                path_efficiency=float(info.get("path_efficiency", 0.0)),
+                                collisions=int(info.get("collisions", 0)),
+                                invalid_actions=int(info.get("invalid_actions", 0)),
+                                pickup_step=info.get("pickup_step"),
+                                pickups=int(info.get("pickups", 1 if info.get("pickup_step") is not None else 0)),
+                                items_total=int(info.get("items_total", 1)),
+                                items_delivered=int(info.get("items_delivered", int(info.get("success", False)))),
+                                completion_rate=float(info.get("completion_rate", float(info.get("success", False)))),
                                 cycle_events=int(diagnostics.cycle_events),
                                 interaction_cycle_events=int(diagnostics.interaction_cycle_events),
                                 state_revisit_rate=float(diagnostics.state_revisit_rate),
@@ -241,8 +244,8 @@ def evaluate_policy(
                             if progress_callback:
                                 progress_callback(
                                     f"{record.map_name} seed={seed}: success={record.success} "
-                                    f"steps={record.steps} efficiency={record.path_efficiency:.3f} "
-                                    f"cycles={record.cycle_events} revisit={record.state_revisit_rate:.3f}"
+                                    f"completion={record.completion_rate:.2f} steps={record.steps} "
+                                    f"efficiency={record.path_efficiency:.3f} cycles={record.cycle_events}"
                                 )
                             break
                     if recorder is not None and visualize_episode:
@@ -265,6 +268,8 @@ def evaluate_policy(
         "torch": torch.__version__,
         "cuda_runtime": torch.version.cuda,
         "device": str(device),
+        "task_id": env.TASK_ID,
+        "task_code": env.TASK_CODE,
         "observation_mode": env.observation_mode,
         "view_size": env.view_size,
         "action_mask_mode": action_mask_mode,
@@ -274,17 +279,19 @@ def evaluate_policy(
     paths = _save_results(
         records,
         summary,
-        Path(output_dir),
+        task_output_dir,
         prefix=f"{safe_task}_{safe_model}_{safe_policy}_{safe_reward}",
         metadata=metadata,
     )
+    build_task_report(task_output_dir, task.code, task.display_name)
     return summary, records, paths
 
 
 def load_checkpoint_model(checkpoint_path: str | Path, device: torch.device) -> tuple[nn.Module, dict]:
     checkpoint = torch.load(checkpoint_path, map_location=device)
     module_name = checkpoint.get("model_module", "001_simple_cnn")
-    _, factory = load_model_plugin(module_name)
+    task_id = str(checkpoint.get("task_id", "TFP-FoxTransport-Local"))
+    _, factory = load_model_plugin(module_name, task_id=task_id)
     model = factory(tuple(checkpoint["observation_shape"]), int(checkpoint["action_count"])).to(device)
     model.load_state_dict(checkpoint["model_state"])
     progress_hook = getattr(model, "set_training_progress", None)

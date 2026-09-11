@@ -1,159 +1,114 @@
-# TFP — Traveling Fox Problems : A Lightweight POMDP Benchmark for Reinforcement Learning
+# TFP — Traveling Fox Problems
 
-**A compact PyTorch benchmark for partially observed transport, PPO memory, exploration, and anti-deadlock research.**
+**A lightweight PyTorch POMDP benchmark for controlled reinforcement-learning studies on local perception, memory, exploration, interaction timing, and deadlock behavior.**
 
-TFP is a small embodied-RL testbed for rapid controlled experiments before moving to larger simulators or physical robots. The agent receives a local observation, must locate cargo, execute `PICKUP`, navigate to the goal, and execute `DELIVER`. The benchmark is designed to expose perceptual aliasing, recurrent-memory limits, interaction-learning difficulty, exploration failures, and deterministic local policy cycles.
+![TFP Studio](assets/demo.png)
 
-## Demo
+TFP is organized as a multi-task research framework rather than a single environment. Each task owns its maps, models, rewards, experiment presets, checkpoints, and result namespace, while PPO training, evaluation, diagnostics, and visualization remain shared. The repository is designed for compact ablation studies on resource-constrained agents using reproducible **map × seed** evaluation.
 
-![TFP transport demo](assets/demo.png)
+## Tasks
 
-*Example local-view transport episode rendered by the built-in visualizer.*
+| Code | Task | Train / test maps | Local view | Objective |
+|---|---|---:|---|---|
+| `FOX-TR-L1` | **Fox Transport · Local** | 54 / 18 | 5×5, 7×7 | find one cargo item and deliver it to the destination |
+| `FOX-CS-L2` | **Fox Color Sort · Local** | 45 / 15 | 5×5, 7×7 | collect 2–5 colored objects and deliver each to the matching colored destination |
 
-## Benchmark
+### FOX-TR-L1 — local transport
 
-| Component | Setting |
-|---|---:|
-| Task | `TFP-FoxTransport-Local` (`FOX-TR-L1`) |
-| Observation | local `10×5×5` tensor |
-| Actions | four moves + `PICKUP` + `DELIVER` |
-| Training maps | 54 |
-| Unseen test maps | 18 |
-| Map sizes | 10×10, 15×15, 20×20 |
-| Topology families | aisle, partition, blocks, mixed, rooms, zigzag |
-| Formal seeds | 10 per map |
-| Formal episodes | **180** |
+A partially observable navigation-and-interaction task intended to expose short behavior cycles, perceptual aliasing, delayed pickup/delivery decisions, and exploration failures. Maps span 10×10, 15×15, and 20×20 layouts with multiple structural families. It is the primary task for studying **action memory, recurrent policies, Tabu/TabuX, intrinsic exploration, bootstrap training, and reward-shaping ablations**.
 
-Formal comparisons should use the same map × seed matrix, checkpoint role, action-mask protocol, and evaluation reward unless one of those variables is the intended ablation.
+### FOX-CS-L2 — color-conditioned sorting
 
-## Action masks
+A lower-topological-complexity but higher task-state-complexity problem. Each episode contains 2–5 colored objects and matching destinations; the fox carries one item at a time and must infer which interaction and target are currently relevant from a local observation. Maps span 8×8, 10×10, and 12×12 layouts. The task is intended for **goal conditioning, multi-stage completion, interaction learning, and recurrent memory under color-specific objectives**.
 
-TFP supports two explicit mask protocols:
+Both tasks use six actions: four-neighbor motion, `PICKUP`, and `DROP`. `task` masking forces a required interaction when available; `valid` masking leaves the decision to the policy and therefore makes interaction timing part of the learning problem.
 
-- **`task`** — geometric validity plus task supervision. On the cargo cell, `PICKUP` becomes the only available action. While carrying cargo on the goal, `DELIVER` becomes the only available action.
-- **`valid`** — semantically valid actions without forced interaction. On cargo, the policy may `PICKUP` or move away. On the goal while carrying, the policy may `DELIVER` or move away. Early off-goal `DROP` is not exposed because the environment classifies it as invalid.
+## Controlled benchmark results
 
-`task` and `valid` answer different research questions. `task` isolates navigation and memory under supervised interaction timing; `valid` requires the learned policy to solve both navigation and interaction timing. Training configuration is frozen at run start, and checkpoints preserve the mask used during training.
+README benchmark tables are **not last-run snapshots**. A result enters these tables only when it completes the task's full packaged test-map × default-seed matrix under the controlled protocol: default local view, default reward, `task` mask, and `001_ppo_categorical`. Repeated qualifying runs for the same model are averaged. Smoke tests, partial evaluations, custom rewards, and other ablations remain available in **TFP Studio → Compare** but cannot silently overwrite the benchmark.
 
-## Rewards
+### FOX-TR-L1
 
-- `001_dense_transport` — dense transport baseline.
-- `001_sparse_transport` — task-event reward with minimal shaping.
-- `002_cycle_safe_transport` — symmetric geodesic shaping that makes immediate progress/regress loops net negative after step cost.
-- `003_valid_interaction_transport` — valid-mask study reward with a small opportunity cost for leaving an available `PICKUP` or `DELIVER` interaction while preserving policy choice.
+<!-- TFP-BENCHMARK:FOX-TR-L1:START -->
+| Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_simple_cnn` | 121.8k | 1 | 180 | 37.8% | 37.8% | 73.9% | 125.3 | 5.42 | 0.996 | 0.00 | 0.00 | 107.61 | 0.00 | 57.1% | 0.277 |
+| `002_simple_cnn_tabu` | 121.8k | 1 | 180 | 55.6% | 55.6% | 73.9% | 102.0 | 6.74 | 0.835 | 0.00 | 0.00 | 16.19 | 0.00 | 47.2% | 0.328 |
+| `003_action_memory_cnn` | 132.4k | 1 | 180 | 57.8% | 57.8% | 75.6% | 93.3 | 6.94 | 0.988 | 0.00 | 0.00 | 73.88 | 0.00 | 39.6% | 0.731 |
+| `004_simple_cnn_tabux` | 121.8k | 1 | 180 | 87.8% | 87.8% | 93.3% | 58.1 | 9.66 | 0.828 | 0.00 | 0.00 | 7.09 | 0.00 | 20.0% | 0.458 |
+| `005_action_memory_tabux_cnn` | 132.4k | 1 | 180 | 86.1% | 86.1% | 91.7% | 57.2 | 9.49 | 0.881 | 0.00 | 0.00 | 6.67 | 0.00 | 19.0% | 0.905 |
+| `006_ppo_gru_bootstrap` | 167.4k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `007_ppo_gru_action_memory` | 141.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `008_ppo_gru_episodic_count` | 133.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `009_ppo_gru_action_memory_tabux` | 141.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `010_ppo_gru_gobi` | 133.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-The current `valid` mask is semantically aligned with `step()`: off-goal drop is not exposed. This prevents a pickup/drop reward loop in which repeated pickup bonuses could compete with actual delivery.
+*Controlled protocol: 18 test maps × 10 seeds = 180 episodes/run, `local` 5×5, `001_dense_transport`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
+<!-- TFP-BENCHMARK:FOX-TR-L1:END -->
 
-## Active models
+![FOX-TR-L1 controlled benchmark](results/FOX-TR-L1/summary.png)
 
-| ID | Model | Research role |
-|---|---|---|
-| 001 | `001_simple_cnn` | feed-forward visual PPO baseline |
-| 002 | `002_simple_cnn_tabu` | baseline + short-cycle inference filter |
-| 003 | `003_action_memory_cnn` | explicit finite action history |
-| 004 | `004_simple_cnn_tabux` | baseline + local-basin TabuX escape |
-| 005 | `005_action_memory_tabux_cnn` | action memory + TabuX |
-| 006 | `006_ppo_gru_bootstrap` | CNN checkpoint → GRU residual fine-tuning |
-| 007 | `007_ppo_gru_action_memory` | recurrent action-memory baseline |
-| 008 | `008_ppo_gru_episodic_count` | GRU + episodic novelty |
-| 009 | `009_ppo_gru_action_memory_tabux` | GRU action memory + TabuX |
-| 010 | `010_ppo_gru_gobi` | GRU + compact GoBI-style exploration |
+### FOX-CS-L2
 
-## Key model design notes
+<!-- TFP-BENCHMARK:FOX-CS-L2:START -->
+| Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_color_cnn` | 125.3k | 1 | 75 | 84.0% | 90.4% | 100.0% | 82.7 | 12.05 | 0.969 | 0.00 | 0.00 | 53.67 | 0.00 | 14.7% | 0.624 |
+| `002_goal_conditioned_cnn` | 233.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_goal_gru_action_memory` | 144.9k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-### `001_simple_cnn`
+*Controlled protocol: 15 test maps × 5 seeds = 75 episodes/run, `local` 5×5, `001_dense_color_sort`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
+<!-- TFP-BENCHMARK:FOX-CS-L2:END -->
 
-`001_simple_cnn` is the minimum learned visual policy and the main architectural control. Three lightweight convolutional stages encode the fixed local tensor into a compact feature, followed by independent PPO actor and value heads. The model has no recurrent state, explicit action history, intrinsic reward, or inference-time search controller. This makes it useful for separating representation capacity from protocol effects. Under `task`, interaction timing is effectively supplied by the mask; under `valid`, the same network must learn when to execute `PICKUP` and `DELIVER` from observation channels that indicate interaction availability. The architecture should therefore remain fixed when studying mask, reward, checkpoint, or evaluation changes. Any large change in its behavior is easier to attribute to the experimental protocol than to hidden temporal state. It also serves as the first regression model for training/evaluation consistency and the reference point for memory and anti-deadlock extensions.
+![FOX-CS-L2 controlled benchmark](results/FOX-CS-L2/summary.png)
 
-### `002_simple_cnn_tabu`
+## Key research techniques
 
-`002_simple_cnn_tabu` keeps the trainable neural network identical to the Simple CNN and adds a small inference-only tabu mechanism. The controller tracks recent actions and detects short periodic motifs such as LEFT↔RIGHT or UP↔DOWN. When the greedy policy proposes an action that would continue a detected short cycle, that action is temporarily suppressed and the best remaining legal action is selected. PPO training is unchanged, so this branch isolates the effect of a deterministic deployment-time cycle breaker from improvements in representation learning. The mechanism is intentionally narrow: it can interrupt obvious two-action oscillations but has limited understanding of a broader local decision basin and may escape for one step only to return immediately. Tabu is therefore a low-complexity anti-deadlock baseline. If cycle count decreases without a corresponding improvement in success or path efficiency, the result suggests that the controller is suppressing a visible symptom rather than solving navigation or interaction reasoning.
+**Action memory.** TFP can encode a short history of *executed actions* separately from visual features. This is deliberately lower-dimensional than asking a recurrent unit to remember the entire observation stream. In local POMDPs, many failures are defined by action sequence—left/right oscillation, repeated forward/backtracking, or leaving an interaction cell—so recent actions provide a direct cue for loop phase and interaction history. In the packaged Task-1 controlled reference, the Action-Memory CNN improves success over the plain CNN baseline (57.8% vs. 37.8%). Earlier development runs with recurrent visual memory were also less stable, but the GRU rows remain deliberately unreported until they complete the same controlled protocol. We therefore treat action history as a strong compact memory prior rather than claiming that more visual recurrence is universally better.
 
-### `003_action_memory_cnn`
+**Tabu and TabuX.** Tabu controllers operate at inference time and detect short repeated behavior patterns without retraining the neural policy. Basic Tabu suppresses recently repeated action cycles; TabuX extends this idea to local state-action basins so the agent can escape persistent deadlocks while preserving the learned policy elsewhere. This separation is useful experimentally: neural learning quality and deployment-time anti-deadlock control can be measured independently. The controller is intentionally lightweight and can be enabled as an ablation without changing PPO optimization.
 
-`003_action_memory_cnn` tests whether a compact finite behavioral history can reduce local-observation aliasing without using a recurrent network. The local tensor is encoded by the lightweight CNN, while recent executed actions are embedded and summarized into a small history feature. Visual and action-history features are fused before the PPO actor and value heads. The exact history context used during rollout is stored and replayed during optimization, so shuffled PPO minibatches do not reconstruct a different temporal context from the one that generated the original action. This model is useful when two local scenes look similar but were reached through different recent trajectories. Its memory remains finite and explicit, making it easier to inspect than a GRU and preventing hidden state from accumulating arbitrarily long context. The branch therefore separates the question “does recent behavior provide useful state information?” from the stronger question “is learned recurrent state required for the task?”
+**Training strategy.** Training uses compact PPO with task-owned model plugins and deterministic experiment presets. Curriculum settings can progress from smaller/easier maps to larger layouts, while evaluation is isolated from training and always uses fixed test maps and seed matrices. Full benchmark runs, smoke integration tests, and custom ablations are explicitly separated in reporting. Recurrent rollouts preserve the exact hidden/action-history context used during data collection so PPO updates do not silently train on a different memory state than the acting policy.
 
-### `004_simple_cnn_tabux`
+**Reward design.** TFP provides sparse, dense, cycle-safe, and interaction-aware rewards as task-scoped plugins. Dense rewards use geodesic progress to make early learning practical; cycle-safe variants use symmetric progress/regression terms so a two-step oscillation cannot accumulate positive shaping reward. Under `valid` masks, interaction-aware rewards add an opportunity cost when the agent stands on a valid pickup/delivery state but ignores the interaction. This makes reward assumptions explicit and enables controlled reward-shaping ablations rather than embedding task logic inside the trainer.
 
-`004_simple_cnn_tabux` combines the unchanged Simple CNN with a stronger inference-only escape controller. TabuX maintains a compact trace of recent behavior, detects repeated local basins rather than only immediate ABAB motifs, and applies temporary tabu tenure to actions or transitions that would continue or rapidly re-enter the basin. An aspiration rule can release a tabu choice when it becomes sufficiently preferable, preventing the controller from becoming permanently rigid. Because TabuX is applied during greedy evaluation rather than PPO optimization, the learned CNN and training objective remain directly comparable to the baseline. This makes the model useful both as an engineering safeguard and as a diagnostic probe. Improvement over `001_simple_cnn` indicates that part of the failure set is caused by deterministic local-policy traps rather than missing visual capacity. TabuX should not be interpreted as learned exploration: it can redirect an action sequence, but it does not learn task semantics, long-horizon planning, or a global navigation model.
+**GoBI-style exploration.** `GoBI Compact` is a resource-aware intrinsic module that combines lifelong count novelty with episodic reachability expansion estimated by a very small latent dynamics model. From the current latent state it imagines a limited set of short action branches, rewarding states that expand the episode's reachable signature set. The imagination budget is intentionally tiny, making the method suitable for testing whether model-based novelty can improve local exploration without turning TFP into a large world-model training project.
 
-### `007_ppo_gru_action_memory`
+**Bootstrap recurrent training.** `PPO-GRU Bootstrap` initializes its visual encoder and actor/value heads from a mature feed-forward CNN checkpoint. The new recurrent residual starts near zero, the transferred visual policy is briefly protected, and memory contribution is smoothly ramped during early fine-tuning. This avoids the destructive transition observed when a random recurrent branch is switched on inside an already learned policy. Bootstrap is therefore treated as a controlled optimization strategy for adding temporal capacity rather than as a separate source of privileged information.
 
-`007_ppo_gru_action_memory` is the primary learned temporal model. A compact CNN extracts the local visual feature, a GRU maintains recurrent state, and an explicit embedding of recent actions provides a direct short-term behavioral record. The two memory paths are complementary: the GRU can compress longer temporal context, while the action sequence does not need to be reconstructed implicitly inside hidden state. PPO optimization uses rollout-length truncated backpropagation through time and preserves the recurrent context that actually generated each action, with state reset at episode boundaries. The architecture directly targets perceptual aliasing caused by the 5×5 local view. However, recurrent memory does not guarantee escape from deterministic local cycles. A GRU can itself settle into a stable repeated trajectory if policy logits and reward make the loop locally self-consistent. `009_ppo_gru_action_memory_tabux` therefore keeps the learned recurrent architecture while adding an external TabuX controller to isolate residual inference-time deadlocks.
+## Task-scoped architecture
 
-### `008_ppo_gru_episodic_count`
+```text
+tfp/tasks/<task>/
+├── maps/train + maps/test
+├── models/              # model plugins used only by this task
+├── rewards/             # reward plugins used only by this task
+└── environment.py       # optional task-owned environment
 
-`008_ppo_gru_episodic_count` augments compact recurrent PPO with a lightweight episodic-count novelty signal. Within each episode, local observation signatures are counted, and rarely visited signatures receive a larger intrinsic bonus using an inverse-count style schedule. The intrinsic coefficient is annealed so that exploration pressure is strongest early and gradually yields to the external transport objective. This design targets repeated-state and local-basin behavior without introducing a separate trainable curiosity network, keeping the experiment small and interpretable. Its limitation is deliberate: novelty does not imply useful task progress. An agent may discover new local observations while still failing to execute `PICKUP`, reach the goal, or resolve observation aliasing. Counts may also merge globally different states that appear identical inside the local view. Episodic Count should therefore be evaluated jointly with success, path efficiency, cycle events, and state revisit rate rather than treating intrinsic reward magnitude or raw novelty as evidence of effective exploration.
+experiments/<TASK-CODE>/ # reproducible experiment presets
+results/<TASK-CODE>/     # evaluation records + controlled benchmark report
+checkpoints/<TASK-CODE>/ # local model weights (ignored by Git)
+videos/                  # local evaluation videos (ignored by Git)
+```
 
-## Deadlock analysis
-
-Persistent LEFT↔RIGHT or UP↔DOWN behavior is best treated as a combined partial-observation, reward, and deterministic-policy problem. The 5×5 tensor can alias globally different locations, while greedy action selection turns small logit preferences into stable limit cycles. Asymmetric distance shaping can also make some progress/regress sequences artificially attractive; `002_cycle_safe_transport` removes that incentive through symmetric distance deltas. Memory addresses temporal ambiguity, whereas Tabu and TabuX directly target residual deterministic cycles. A credible anti-deadlock improvement should increase task success or path efficiency while also reducing cycle events and state revisit rate. A lower cycle count by itself is insufficient: a controller may merely replace one repeated behavior with another inefficient path. The benchmark therefore records task and behavior metrics together.
-
-## Experimental results template
-
-Fill the table only with results generated under a declared common protocol.
-
-| Model | Train Reward | Train Mask | Eval Reward | Eval Mask | Success | Pickup | Mean Steps | Mean Return | Path Efficiency | Cycle Events | State Revisit | Inference ms |
-|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_simple_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `002_simple_cnn_tabu` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `003_action_memory_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `004_simple_cnn_tabux` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `005_action_memory_tabux_cnn` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `006_ppo_gru_bootstrap` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `007_ppo_gru_action_memory` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `008_ppo_gru_episodic_count` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `009_ppo_gru_action_memory_tabux` |  |  |  |  |  |  |  |  |  |  |  |  |
-| `010_ppo_gru_gobi` |  |  |  |  |  |  |  |  |  |  |  |  |
+The core trainer and evaluator instantiate environments through the task registry. Adding a new task does not require hard-coding it into PPO.
 
 ## TFP Studio
 
-![TFP Studio](assets/tfp_studio.png)
-
-TFP Studio provides **Train**, **Evaluate**, **Compare**, and **Research Plugins** views. Compare records the checkpoint protocol and the actual evaluation protocol separately:
-
-- **PT Reward** / **Eval Reward**
-- **PT Mask** / **Eval Mask**
-
-This makes deliberate reward or mask overrides visible instead of silently mixing incompatible runs. Evaluation supports the final training endpoint (`last`) and validation-selected (`best`) checkpoint roles.
-
-## Reproducibility
-
-Checkpoints preserve task, model, policy, reward, action mask, seed, observation configuration, checkpoint role, and training configuration. Evaluation JSON files preserve the checkpoint protocol, evaluation protocol, hardware/runtime information, map × seed benchmark definition, per-episode records, and aggregate behavior metrics.
-
-Large learned weights are ignored by Git through `*.pt`, `*.pth`, and `*.ckpt`. Only the five small packaged baseline reference checkpoints are explicitly allow-listed.
-
-Experiment templates are available under:
-
-- `experiments/anti_deadlock/`
-- `experiments/valid_mask/`
-
-## Repository structure
-
-```text
-Traveling-Fox-Problems/
-├─ README.md
-├─ tfp_studio.py
-├─ assets/
-├─ checkpoints/
-├─ docs/
-├─ experiments/
-├─ reference_results/
-├─ results/
-├─ tests/
-├─ tools/
-└─ tfp/
-   ├─ envs/
-   ├─ evaluation/
-   ├─ intrinsic/
-   ├─ models/
-   ├─ policies/
-   ├─ rewards/
-   ├─ tasks/
-   ├─ training/
-   └─ visualization/
+```bash
+python tfp_studio.py
 ```
 
-## License
+Select **Task → Model → Reward → 5×5/7×7 view → mask protocol**, then train or evaluate. The **Compare** tab has its own Task selector and can show either all stored records or only controlled benchmark runs, preventing measurements from different tasks from being mixed accidentally.
 
-MIT. See [`LICENSE`](LICENSE).
+For reproducible comparisons, vary one intended factor at a time and keep the map × seed matrix, observation size, action mask, reward, policy, and checkpoint role fixed. Inference latency is hardware-dependent and should be interpreted together with the recorded runtime metadata.
+
+## Rebuild reports
+
+Evaluation automatically refreshes the corresponding task report. To regenerate every benchmark table and PNG from stored records:
+
+```bash
+python tools/rebuild_reports.py
+```
+
+Generated task summaries live at `results/<TASK-CODE>/README.md` and `results/<TASK-CODE>/summary.png`.

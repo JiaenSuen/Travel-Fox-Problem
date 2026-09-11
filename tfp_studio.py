@@ -13,13 +13,13 @@ from tkinter import filedialog, messagebox, ttk
 
 from tfp.checkpoints import checkpoint_path, resolve_checkpoint_path
 from tfp.evaluation import evaluate_policy, load_checkpoint_model
-from tfp.envs.transport_env import TransportEnv
 from tfp.models import discover_model_plugins
 from tfp.models.model_api import normalize_model_name
 from tfp.policies import discover_policy_plugins
 from tfp.rewards import discover_reward_plugins
+from tfp.reporting import collect_evaluation_runs, rebuild_all_reports
 from tfp.runtime import resolve_device, runtime_status
-from tfp.tasks import discover_tasks, get_task
+from tfp.tasks import create_task_env, discover_tasks, get_task
 from tfp.training import PPOConfig, train_ppo
 from tfp.utils import discover_maps
 
@@ -352,6 +352,8 @@ class TFPStudio(tk.Tk):
         self.metric_loss_var = tk.StringVar(value="—")
         self.runtime_var = tk.StringVar(value="Checking runtime…")
         self.experiment_tag_var = tk.StringVar(value="")
+        self.compare_task_var = tk.StringVar(value="FOX-TR-L1")
+        self.compare_scope_var = tk.StringVar(value="All records")
 
     def _build_ui(self) -> None:
         header = ttk.Frame(self, padding=(24, 18, 24, 10))
@@ -440,7 +442,7 @@ class TFPStudio(tk.Tk):
         r = 1
         self.task_combo = self._row_combo(config, r, "Task", self.task_var, []); r += 1
         self.model_combo = self._row_combo(config, r, "Model", self.model_var, []); r += 1
-        self.task_combo.bind("<<ComboboxSelected>>", self._on_checkpoint_selection_changed)
+        self.task_combo.bind("<<ComboboxSelected>>", self._on_task_changed)
         self.model_combo.bind("<<ComboboxSelected>>", self._on_checkpoint_selection_changed)
         self.policy_combo = self._row_combo(config, r, "Action policy", self.policy_var, []); r += 1
         self.reward_combo = self._row_combo(config, r, "Reward function", self.reward_var, []); r += 1
@@ -450,9 +452,9 @@ class TFPStudio(tk.Tk):
         self._row_entry(config, r, "Timesteps", self.timesteps_var); r += 1
         self._row_entry(config, r, "Parallel envs", self.num_envs_var); r += 1
         self._row_entry(config, r, "Train seed", self.train_seed_var); r += 1
-        self._row_entry(config, r, "Local view", self.view_var); r += 1
+        self.view_combo = self._row_combo(config, r, "Local view", self.view_var, ["5", "7"]); r += 1
         self.train_mask_combo = self._row_combo(config, r, "Action mask", self.mask_var, ["task", "valid"]); r += 1
-        ttk.Label(config, text="task: force PICKUP/DELIVER · valid: interactions remain policy decisions; use 003_valid_interaction_transport for the dedicated valid-mask study", style="Card.TLabel", foreground=PALETTE["blue_ink"], wraplength=290).grid(row=r, column=0, columnspan=2, sticky="w", pady=(0, 6)); r += 1
+        ttk.Label(config, text="task: force required interaction · valid: pickup/delivery timing remains a policy decision; select the task-specific valid-interaction reward when studying this setting", style="Card.TLabel", foreground=PALETTE["blue_ink"], wraplength=290).grid(row=r, column=0, columnspan=2, sticky="w", pady=(0, 6)); r += 1
         ttk.Label(config, text="Curriculum", style="Card.TLabel").grid(row=r, column=0, sticky="w", pady=4)
         ttk.Checkbutton(config, variable=self.curriculum_var).grid(row=r, column=1, sticky="w"); r += 1
 
@@ -500,7 +502,7 @@ class TFPStudio(tk.Tk):
         r = 1
         self.eval_task_combo = self._row_combo(card, r, "Task", self.task_var, []); r += 1
         self.eval_model_combo = self._row_combo(card, r, "Model", self.model_var, []); r += 1
-        self.eval_task_combo.bind("<<ComboboxSelected>>", self._on_checkpoint_selection_changed)
+        self.eval_task_combo.bind("<<ComboboxSelected>>", self._on_task_changed)
         self.eval_model_combo.bind("<<ComboboxSelected>>", self._on_checkpoint_selection_changed)
         role_combo = self._row_combo(card, r, "Checkpoint role", self.eval_checkpoint_role_var, ["last", "best"]); r += 1
         role_combo.bind("<<ComboboxSelected>>", self._on_checkpoint_selection_changed)
@@ -529,6 +531,20 @@ class TFPStudio(tk.Tk):
         top = ttk.Frame(parent, style="Card.TFrame", padding=16)
         top.grid(row=0, column=0, sticky="ew")
         ttk.Label(top, text="Experiment Comparison", style="Card.TLabel", font=("Segoe UI Semibold", 13)).pack(side="left")
+
+        ttk.Label(top, text="Task", style="Card.TLabel").pack(side="left", padx=(22, 6))
+        self.compare_task_combo = ttk.Combobox(top, textvariable=self.compare_task_var, state="readonly", width=14)
+        self.compare_task_combo.pack(side="left")
+        self.compare_task_combo.bind("<<ComboboxSelected>>", lambda _e: self._refresh_comparison())
+
+        ttk.Label(top, text="Scope", style="Card.TLabel").pack(side="left", padx=(14, 6))
+        self.compare_scope_combo = ttk.Combobox(
+            top, textvariable=self.compare_scope_var, state="readonly", width=20,
+            values=["All records", "Controlled benchmark"],
+        )
+        self.compare_scope_combo.pack(side="left")
+        self.compare_scope_combo.bind("<<ComboboxSelected>>", lambda _e: self._refresh_comparison())
+
         SoftRoundedButton(
             top, "Refresh Results", self._refresh_comparison, width=120, height=32,
             fill=PALETTE["pink_soft"], hover="#F5DCE7", foreground="#875F72", surface=PALETTE["card"]
@@ -543,25 +559,29 @@ class TFPStudio(tk.Tk):
         ).pack(side="right", padx=(0, 8))
         ttk.Label(
             parent,
-            text="Each row is one complete fixed map × seed evaluation. Compare models, policies, rewards, and action masks using robotics/RL metrics rather than a single score. Inference latency is hardware-specific.",
-            wraplength=1050, justify="left",
+            text=(
+                "Results are task-scoped. Use All records for exploratory/smoke/ablation runs, or Controlled benchmark for the "
+                "full protocol used by the README tables. Each row is one complete evaluation record; inference latency is hardware-specific."
+            ),
+            wraplength=1080, justify="left",
         ).grid(row=1, column=0, sticky="ew", pady=(10, 8))
 
         table_card = ttk.Frame(parent, style="Card.TFrame", padding=10)
         table_card.grid(row=2, column=0, sticky="nsew")
         table_card.rowconfigure(0, weight=1); table_card.columnconfigure(0, weight=1)
-        columns = ("tag", "model", "policy", "pt_reward", "reward", "pt_mask", "mask", "suite", "episodes", "params", "inference_ms", "success", "pickup", "steps", "return", "efficiency", "collisions", "invalid", "cycles", "interaction_cycles", "revisit")
+        columns = ("task", "source", "tag", "model", "policy", "pt_reward", "reward", "pt_mask", "mask", "suite", "episodes", "params", "inference_ms", "success", "completion", "pickup", "steps", "return", "efficiency", "collisions", "invalid", "cycles", "interaction_cycles", "revisit")
         self.compare_tree = ttk.Treeview(table_card, columns=columns, show="headings", selectmode="extended")
         headings = {
-            "tag":"Tag", "model":"Model", "policy":"Policy", "pt_reward":"PT Reward", "reward":"Eval Reward", "pt_mask":"PT Mask", "mask":"Eval Mask", "suite":"Suite", "episodes":"Episodes",
-            "params":"Params", "inference_ms":"Infer ms", "success":"Success", "pickup":"Pickup",
+            "task":"Task", "source":"Source", "tag":"Tag", "model":"Model", "policy":"Policy", "pt_reward":"PT Reward", "reward":"Eval Reward", "pt_mask":"PT Mask", "mask":"Eval Mask", "suite":"Suite", "episodes":"Episodes",
+            "params":"Params", "inference_ms":"Infer ms", "success":"Success", "completion":"Completion", "pickup":"Pickup",
             "steps":"Mean steps", "return":"Mean return", "efficiency":"Efficiency", "collisions":"Collisions", "invalid":"Invalid",
             "cycles":"Cycles", "interaction_cycles":"Interact cycles", "revisit":"State revisit"
         }
-        widths = {"tag":125,"model":175,"policy":155,"pt_reward":165,"reward":165,"pt_mask":82,"mask":82,"suite":90,"episodes":72,"params":86,"inference_ms":78,"success":76,"pickup":76,"steps":90,"return":90,"efficiency":80,"collisions":80,"invalid":72,"cycles":72,"interaction_cycles":95,"revisit":88}
+        widths = {"task":92,"source":86,"tag":125,"model":175,"policy":155,"pt_reward":165,"reward":165,"pt_mask":82,"mask":82,"suite":90,"episodes":72,"params":86,"inference_ms":78,"success":76,"completion":86,"pickup":76,"steps":90,"return":90,"efficiency":80,"collisions":80,"invalid":72,"cycles":72,"interaction_cycles":95,"revisit":88}
+        left = {"task", "source", "tag", "model", "policy", "pt_reward", "reward"}
         for key in columns:
             self.compare_tree.heading(key, text=headings[key], command=lambda k=key: self._sort_comparison(k, False))
-            self.compare_tree.column(key, width=widths[key], minwidth=65, anchor="center" if key not in {"tag","model","policy","pt_reward","reward"} else "w")
+            self.compare_tree.column(key, width=widths[key], minwidth=65, anchor="w" if key in left else "center")
         vbar = ttk.Scrollbar(table_card, orient="vertical", command=self.compare_tree.yview)
         hbar = ttk.Scrollbar(table_card, orient="horizontal", command=self.compare_tree.xview)
         self.compare_tree.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
@@ -575,60 +595,74 @@ class TFPStudio(tk.Tk):
 
     def _comparison_rows(self):
         rows = []
-        candidates = []
-        reference_dirs = sorted(p for p in (ROOT / "reference_results").iterdir() if p.is_dir() and not p.name.startswith("_")) if (ROOT / "reference_results").exists() else []
-        for folder in (ROOT / "results", *reference_dirs):
-            if folder.exists():
-                candidates.extend(sorted(folder.rglob("*.json")))
-        for path in candidates:
-            try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-                summary = payload.get("summary", {})
-                records = payload.get("records", [])
-                first = records[0] if records else {}
-                unique_maps = len({r.get("map_name") for r in records if r.get("map_name") is not None})
-                unique_seeds = len({r.get("seed") for r in records if r.get("seed") is not None})
-                benchmark = payload.get("benchmark", {})
-                metadata = payload.get("metadata", {})
-                suite = f'{int(benchmark.get("maps", unique_maps))}m×{int(benchmark.get("seeds", unique_seeds))}s'
-                rows.append((path, {
-                    "tag": str(metadata.get("experiment_tag", "")) or "—",
-                    "model": str(first.get("model", path.stem.split("_")[0])),
-                    "policy": str(first.get("policy", "—")),
-                    "pt_reward": str(metadata.get("checkpoint_reward_module", "—")),
-                    "reward": str(first.get("reward", "—")),
-                    "pt_mask": str(metadata.get("checkpoint_action_mask_mode", "—")),
-                    "mask": str(metadata.get("action_mask_mode", "—")),
-                    "suite": suite,
-                    "episodes": int(summary.get("episodes", 0)),
-                    "params": int(metadata.get("model_parameters", 0) or 0),
-                    "inference_ms": float(summary.get("mean_inference_ms", 0.0)),
-                    "success": float(summary.get("success_rate", 0.0)),
-                    "pickup": float(summary.get("pickup_rate", 0.0)),
-                    "steps": float(summary.get("mean_steps", 0.0)),
-                    "return": float(summary.get("mean_return", 0.0)),
-                    "efficiency": float(summary.get("mean_path_efficiency", 0.0)),
-                    "collisions": float(summary.get("mean_collisions", 0.0)),
-                    "invalid": float(summary.get("mean_invalid_actions", 0.0)),
-                    "cycles": float(summary.get("mean_cycle_events", 0.0)),
-                    "interaction_cycles": float(summary.get("mean_interaction_cycle_events", 0.0)),
-                    "revisit": float(summary.get("mean_state_revisit_rate", 0.0)),
-                }))
-            except (OSError, ValueError, TypeError, json.JSONDecodeError):
-                continue
+        for run in collect_evaluation_runs(ROOT):
+            payload = run.payload
+            summary = payload.get("summary", {})
+            records = payload.get("records", [])
+            first = records[0] if records else {}
+            unique_maps = len({r.get("map_name") for r in records if r.get("map_name") is not None})
+            unique_seeds = len({r.get("seed") for r in records if r.get("seed") is not None})
+            benchmark = payload.get("benchmark", {})
+            metadata = payload.get("metadata", {})
+            suite = f'{int(benchmark.get("maps", unique_maps))}m×{int(benchmark.get("seeds", unique_seeds))}s'
+            rows.append((run.path, {
+                "task": run.task_code,
+                "source": "benchmark" if run.controlled_benchmark else run.source,
+                "controlled": run.controlled_benchmark,
+                "tag": str(metadata.get("experiment_tag", "")) or "—",
+                "model": str(first.get("model", run.model)),
+                "policy": str(first.get("policy", "—")),
+                "pt_reward": str(metadata.get("checkpoint_reward_module", "—")),
+                "reward": str(first.get("reward", "—")),
+                "pt_mask": str(metadata.get("checkpoint_action_mask_mode", "—")),
+                "mask": str(metadata.get("action_mask_mode", "—")),
+                "suite": suite,
+                "episodes": int(summary.get("episodes", 0)),
+                "params": int(metadata.get("model_parameters", 0) or 0),
+                "inference_ms": float(summary.get("mean_inference_ms", 0.0) or 0.0),
+                "success": float(summary.get("success_rate", 0.0) or 0.0),
+                "completion": float(summary.get("mean_completion_rate", summary.get("success_rate", 0.0)) or 0.0),
+                "pickup": float(summary.get("pickup_rate", 0.0) or 0.0),
+                "steps": float(summary.get("mean_steps", 0.0) or 0.0),
+                "return": float(summary.get("mean_return", 0.0) or 0.0),
+                "efficiency": float(summary.get("mean_path_efficiency", 0.0) or 0.0),
+                "collisions": float(summary.get("mean_collisions", 0.0) or 0.0),
+                "invalid": float(summary.get("mean_invalid_actions", 0.0) or 0.0),
+                "cycles": float(summary.get("mean_cycle_events", 0.0) or 0.0),
+                "interaction_cycles": float(summary.get("mean_interaction_cycle_events", 0.0) or 0.0),
+                "revisit": float(summary.get("mean_state_revisit_rate", 0.0) or 0.0),
+            }))
         return rows
 
     def _refresh_comparison(self) -> None:
         if not hasattr(self, "compare_tree"):
             return
-        for item in self.compare_tree.get_children(): self.compare_tree.delete(item)
+        tasks = discover_tasks()
+        codes = [spec.code for spec in tasks.values()]
+        if hasattr(self, "compare_task_combo"):
+            self.compare_task_combo.configure(values=["All tasks", *codes])
+        if self.compare_task_var.get() not in ["All tasks", *codes]:
+            try:
+                self.compare_task_var.set(get_task(self.task_var.get()).code)
+            except Exception:
+                self.compare_task_var.set("All tasks")
+        for item in self.compare_tree.get_children():
+            self.compare_tree.delete(item)
         self._comparison_paths.clear()
+        selected_task = self.compare_task_var.get()
+        benchmark_only = self.compare_scope_var.get() == "Controlled benchmark"
         for path, row in self._comparison_rows():
+            if selected_task != "All tasks" and row["task"] != selected_task:
+                continue
+            if benchmark_only and not row["controlled"]:
+                continue
             params_text = f'{row["params"] / 1000.0:.1f}k' if row["params"] else "—"
             inference_text = f'{row["inference_ms"]:.3f}' if row["inference_ms"] else "—"
-            values = (row["tag"], row["model"], row["policy"], row["pt_reward"], row["reward"], row["pt_mask"], row["mask"], row["suite"], row["episodes"], params_text, inference_text,
-                      f'{row["success"]:.3f}', f'{row["pickup"]:.3f}', f'{row["steps"]:.1f}', f'{row["return"]:.2f}', f'{row["efficiency"]:.3f}',
-                      f'{row["collisions"]:.2f}', f'{row["invalid"]:.2f}', f'{row["cycles"]:.2f}', f'{row["interaction_cycles"]:.2f}', f'{row["revisit"]:.3f}')
+            values = (
+                row["task"], row["source"], row["tag"], row["model"], row["policy"], row["pt_reward"], row["reward"], row["pt_mask"], row["mask"], row["suite"], row["episodes"], params_text, inference_text,
+                f'{row["success"]:.3f}', f'{row["completion"]:.3f}', f'{row["pickup"]:.3f}', f'{row["steps"]:.1f}', f'{row["return"]:.2f}', f'{row["efficiency"]:.3f}',
+                f'{row["collisions"]:.2f}', f'{row["invalid"]:.2f}', f'{row["cycles"]:.2f}', f'{row["interaction_cycles"]:.2f}', f'{row["revisit"]:.3f}'
+            )
             iid = self.compare_tree.insert("", "end", values=values)
             self._comparison_paths[iid] = path
 
@@ -675,6 +709,7 @@ class TFPStudio(tk.Tk):
                     self._refresh_comparison()
                     return
         self._write_log(f"Deleted {len(paths)} comparison row(s): " + ", ".join(deleted))
+        rebuild_all_reports(ROOT)
         self._refresh_comparison()
 
     def _open_selected_result(self, _event=None) -> None:
@@ -689,25 +724,30 @@ class TFPStudio(tk.Tk):
         ttk.Label(
             card,
             text=(
-                "TFP discovers researcher-written Python plugins automatically. A new experiment can be assembled without editing the environment or trainer: "
-                "drop a network into tfp/models, an action policy into tfp/policies, or a reward function into tfp/rewards, then press Refresh Plugins. "
-                "Models may also own learnable action memory or an inference-only behavior controller without changing the environment observation API."
+                "TFP uses task-scoped research plugins. Add models and rewards inside the selected task folder; policies remain shared. "
+                "The task registry owns environment, maps, view sizes, models, rewards, and result namespace, so new tasks do not require trainer edits."
             ),
             style="Card.TLabel", wraplength=1000, justify="left",
         ).pack(anchor="w", pady=(8, 18))
         buttons = ttk.Frame(card, style="Card.TFrame")
         buttons.pack(anchor="w")
         for label, path in [
-            ("Models", ROOT / "tfp" / "models"),
+            ("Task Models", None),
             ("Policies", ROOT / "tfp" / "policies"),
-            ("Rewards", ROOT / "tfp" / "rewards"),
+            ("Task Rewards", None),
             ("Named Tasks", ROOT / "tfp" / "tasks"),
             ("Launchers", ROOT / "launchers"),
             ("Runtime Config", ROOT / "config"),
             ("Experiment Checklist", ROOT / "docs" / "EXPERIMENT_CHECKLIST.md"),
             ("Model Plugin Guide", ROOT / "docs" / "MODEL_PLUGIN_GUIDE.md"),
         ]:
-            ttk.Button(buttons, text=label, command=lambda p=path: self._open_path(p)).pack(side="left", padx=(0, 8))
+            if label == "Task Models":
+                command = lambda: self._open_path(get_task(self.task_var.get()).train_map_dir.parent.parent / "models")
+            elif label == "Task Rewards":
+                command = lambda: self._open_path(get_task(self.task_var.get()).train_map_dir.parent.parent / "rewards")
+            else:
+                command = lambda p=path: self._open_path(p)
+            ttk.Button(buttons, text=label, command=command).pack(side="left", padx=(0, 8))
         SoftRoundedButton(
             card, "Refresh Plugins", self._refresh_plugins, width=130, height=34,
             fill=PALETTE["blue"], hover="#CFE6F5", foreground=PALETTE["blue_ink"], surface=PALETTE["card"]
@@ -743,6 +783,14 @@ class TFPStudio(tk.Tk):
     def _on_checkpoint_selection_changed(self, _event=None) -> None:
         self._sync_checkpoint_paths()
 
+    def _on_task_changed(self, _event=None) -> None:
+        task = get_task(self.task_var.get())
+        self.view_var.set(str(task.default_view_size))
+        self.eval_seed_var.set(",".join(str(v) for v in task.default_eval_seeds))
+        self._refresh_plugins()
+        self.compare_task_var.set(task.code)
+        self._refresh_comparison()
+
     def _sync_checkpoint_paths(self) -> None:
         try:
             final_path = checkpoint_path(self.task_var.get(), self.model_var.get())
@@ -757,9 +805,13 @@ class TFPStudio(tk.Tk):
 
     def _refresh_plugins(self) -> None:
         tasks = discover_tasks()
-        models = discover_model_plugins()
+        if self.task_var.get() not in tasks and tasks:
+            self.task_var.set(next(iter(tasks)))
+        task_id = self.task_var.get()
+        task = tasks[task_id]
+        models = discover_model_plugins(task_id)
         policies = discover_policy_plugins()
-        rewards = discover_reward_plugins()
+        rewards = discover_reward_plugins(task_id)
         if hasattr(self, "task_combo"):
             self.task_combo.configure(values=list(tasks.keys()))
             self.model_combo.configure(values=list(models.keys()))
@@ -770,11 +822,11 @@ class TFPStudio(tk.Tk):
             self.eval_policy_combo.configure(values=["checkpoint", *list(policies.keys())])
             self.eval_reward_combo.configure(values=["checkpoint", *list(rewards.keys())])
         if models and self.model_var.get() not in models:
-            self.model_var.set(next(iter(models)))
+            self.model_var.set(task.default_model if task.default_model in models else next(iter(models)))
         if policies and self.policy_var.get() not in policies:
             self.policy_var.set(next(iter(policies)))
         if rewards and self.reward_var.get() not in rewards:
-            self.reward_var.set(next(iter(rewards)))
+            self.reward_var.set(task.default_reward if task.default_reward in rewards else next(iter(rewards)))
         self._sync_checkpoint_paths()
         if hasattr(self, "plugin_text"):
             self.plugin_text.delete("1.0", "end")
@@ -816,7 +868,9 @@ class TFPStudio(tk.Tk):
         }
 
     def _save_config(self) -> None:
-        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("TFP experiment config", "*.json")], initialdir=str(ROOT / "experiments"))
+        task_dir = ROOT / "experiments" / get_task(self.task_var.get()).code
+        task_dir.mkdir(parents=True, exist_ok=True)
+        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("TFP experiment config", "*.json")], initialdir=str(task_dir))
         if path:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
             Path(path).write_text(json.dumps(self._config_payload(), indent=2), encoding="utf-8")
@@ -844,6 +898,7 @@ class TFPStudio(tk.Tk):
             self._write_log("Migrated legacy action_mask=none to task (unmasked mode is not supported).")
         if "curriculum" in payload:
             self.curriculum_var.set(bool(payload["curriculum"]))
+        self._refresh_plugins()
         self._sync_checkpoint_paths()
         self._write_log(f"Loaded experiment config: {path}")
 
@@ -949,7 +1004,7 @@ class TFPStudio(tk.Tk):
                 task = get_task(task_id)
                 test_maps = discover_maps(task.test_map_dir)
                 reward_module = (
-                    str(ckpt.get("reward_module", "001_dense_transport"))
+                    str(ckpt.get("reward_module", task.default_reward))
                     if self.eval_reward_var.get() == "checkpoint" else self.eval_reward_var.get()
                 )
                 policy_module = (
@@ -960,10 +1015,10 @@ class TFPStudio(tk.Tk):
                     str(ckpt.get("action_mask_mode", "task"))
                     if self.eval_mask_var.get() == "checkpoint" else self.eval_mask_var.get()
                 )
-                env = TransportEnv(
-                    test_maps,
+                env = create_task_env(
+                    task_id, test_maps,
                     observation_mode=str(ckpt.get("observation_mode", "local")),
-                    view_size=int(ckpt.get("view_size", 5)),
+                    view_size=int(ckpt.get("view_size", task.default_view_size)),
                     reward_module=reward_module,
                 )
                 self.log_queue.put(
