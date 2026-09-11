@@ -201,7 +201,7 @@ def evaluate_policy(
 
                         if renderer is not None and visualize_episode:
                             status_open = bool(window.status_open) if window is not None else False
-                            frame = renderer.render(env, action_name=ACTION_NAMES[action], reward=reward, status_open=status_open)
+                            frame = renderer.render(env, action_name=(getattr(env, "ACTION_NAMES", ACTION_NAMES)[action]), reward=reward, status_open=status_open)
                             if window is not None and not window.show(frame):
                                 presentation = "data"
                                 window.close()

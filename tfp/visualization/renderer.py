@@ -50,6 +50,21 @@ class FoxRenderer:
                     draw.line((x0, y1, x1, y1), fill=(230, 233, 238), width=1)
                     draw.line((x1, y0, x1, y1), fill=(230, 233, 238), width=1)
 
+        # Optional stateful doors for multi-room tasks. Closed doors are drawn as
+        # solid panels; open doors keep a visible frame while exposing the floor.
+        if hasattr(env, "render_doors"):
+            for (dr, dc), is_open in env.render_doors():
+                x0, y0 = ox + dc * tile, oy + dr * tile
+                x1, y1 = x0 + tile - 1, y0 + tile - 1
+                pad = max(2, tile // 7)
+                if is_open:
+                    draw.rectangle((x0 + pad, y0 + 2, x1 - pad, y1 - 2), outline=(139, 99, 65), width=max(2, tile // 10))
+                    draw.line((x0 + pad + 1, y0 + 3, x0 + pad + 1, y1 - 3), fill=(180, 139, 94), width=max(1, tile // 14))
+                else:
+                    draw.rounded_rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), radius=max(2, tile // 10), fill=(151, 105, 69), outline=(94, 61, 42), width=max(1, tile // 12))
+                    knob = max(1, tile // 16)
+                    draw.ellipse((x1 - pad - knob, (y0 + y1)//2 - knob, x1 - pad + knob, (y0 + y1)//2 + knob), fill=(232, 201, 126))
+
         entities = env.render_entities() if hasattr(env, "render_entities") else {"objects": [], "goals": []}
         color_palette = [
             (220, 82, 82),   # red
@@ -61,7 +76,7 @@ class FoxRenderer:
         for color, (gr, gc) in entities.get("goals", []):
             gx0, gy0 = ox + gc * tile, oy + gr * tile
             pad = max(2, tile // 7)
-            if env.TASK_CODE == "FOX-TR-L1":
+            if env.TASK_CODE in {"FOX-TR-L1", "FOX-RM-L3"}:
                 fill, outline = (104, 187, 139), (59, 139, 98)
             else:
                 base = color_palette[int(color) % len(color_palette)]
@@ -75,7 +90,7 @@ class FoxRenderer:
         for color, (rr, rc) in entities.get("objects", []):
             x0, y0 = ox + rc * tile, oy + rr * tile
             p = max(3, tile // 5)
-            if env.TASK_CODE == "FOX-TR-L1":
+            if env.TASK_CODE in {"FOX-TR-L1", "FOX-RM-L3"}:
                 fill, outline = (244, 178, 75), (181, 116, 36)
             else:
                 fill = color_palette[int(color) % len(color_palette)]
@@ -129,9 +144,13 @@ class FoxRenderer:
             f"Carrying  {'YES' if env.carrying else 'NO'}",
             f"Collisions  {env.collisions}",
             f"Invalid  {env.invalid_actions}",
+        ]
+        if hasattr(env, "door_positions"):
+            lines.append(f"Doors  {len(getattr(env, 'open_doors', ()))}/{len(env.door_positions)} open")
+        lines.extend([
             f"Oracle  {env.oracle_steps}",
             f"Reward fn  {env.reward_module}",
-        ]
+        ])
         y = 126
         for line in lines:
             draw.text((panel_x, y), line, fill=(54, 61, 72), font=self.font_small)

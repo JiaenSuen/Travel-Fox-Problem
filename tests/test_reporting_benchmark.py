@@ -28,3 +28,13 @@ def test_gitignore_blocks_weights_videos_and_common_secret_files():
     for pattern in ("*.pt", "*.pth", "*.ckpt", "*.mp4", ".env", "*.pem", "credentials*.json"):
         assert pattern in text
     assert "!checkpoints/FOX-TR-L1/" not in text
+
+
+def test_room_transport_benchmark_has_all_registered_models():
+    rows = benchmark_rows(ROOT, "TFP-FoxRoomTransport-Local")
+    assert [row["model"] for row in rows] == [
+        "001_route_prior_cnn",
+        "002_route_prior_action_memory",
+        "003_route_prior_gru_memory",
+    ]
+    assert all(row["status"] == "pending" for row in rows)

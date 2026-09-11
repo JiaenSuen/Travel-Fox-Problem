@@ -12,6 +12,7 @@ TFP is organized as a multi-task research framework rather than a single environ
 |---|---|---:|---|---|
 | `FOX-TR-L1` | **Fox Transport · Local** | 54 / 18 | 5×5, 7×7 | find one cargo item and deliver it to the destination |
 | `FOX-CS-L2` | **Fox Color Sort · Local** | 45 / 15 | 5×5, 7×7 | collect 2–5 colored objects and deliver each to the matching colored destination |
+| `FOX-RM-L3` | **Fox Room Transport · Doors** | 50 / 20 | 5×5, 7×7 | find seeded cargo across variable multi-room layouts, operate doors, and deliver it across rooms |
 
 ### FOX-TR-L1 — local transport
 
@@ -21,7 +22,11 @@ A partially observable navigation-and-interaction task intended to expose short 
 
 A lower-topological-complexity but higher task-state-complexity problem. Each episode contains 2–5 colored objects and matching destinations; the fox carries one item at a time and must infer which interaction and target are currently relevant from a local observation. Maps span 8×8, 10×10, and 12×12 layouts. The task is intended for **goal conditioning, multi-stage completion, interaction learning, and recurrent memory under color-specific objectives**.
 
-Both tasks use six actions: four-neighbor motion, `PICKUP`, and `DROP`. `task` masking forces a required interaction when available; `valid` masking leaves the decision to the policy and therefore makes interaction timing part of the learning problem.
+### FOX-RM-L3 — multi-room transport with doors
+
+A longer-horizon transport task over variable multi-room layouts. Five packaged scale tiers cover **15×15 / 19×19 / 23×23 / 27×27 / 31×31** maps, from 2×2 to 4×4 room lattices. V5 replaces the unsuccessful V4 room baselines with a **Residual Route-Prior PPO** formulation: the policy still sees only a local 5×5/7×7 crop, but receives a two-value shortest-route doorway waypoint cue instead of a misleading straight-line target vector. Closed doors contribute an explicit `TOGGLE + MOVE` cost to the learning distance, preventing door-toggle reward farming. The three V5 models isolate structured route fusion, compact action memory, and recurrent room memory under one common reward.
+
+`FOX-TR-L1` and `FOX-CS-L2` use six actions: four-neighbor motion, `PICKUP`, and `DROP`. `FOX-RM-L3` adds a seventh `TOGGLE_DOOR` action. `task` masking forces pickup/delivery when required but leaves door operation as a learned decision; `valid` masking leaves all valid interactions to the policy.
 
 ## Controlled benchmark results
 
@@ -53,7 +58,7 @@ README benchmark tables are **not last-run snapshots**. A result enters these ta
 <!-- TFP-BENCHMARK:FOX-CS-L2:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_color_cnn` | 125.3k | 1 | 75 | 84.0% | 90.4% | 100.0% | 82.7 | 12.05 | 0.969 | 0.00 | 0.00 | 53.67 | 0.00 | 14.7% | 0.624 |
+| `001_color_cnn` | 125.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `002_goal_conditioned_cnn` | 233.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `003_goal_gru_action_memory` | 144.9k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
@@ -62,15 +67,31 @@ README benchmark tables are **not last-run snapshots**. A result enters these ta
 
 ![FOX-CS-L2 controlled benchmark](results/FOX-CS-L2/summary.png)
 
+### FOX-RM-L3
+
+<!-- TFP-BENCHMARK:FOX-RM-L3:START -->
+| Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_route_prior_cnn` | 393.2k | 1 | 100 | 92.0% | 92.0% | 95.0% | 103.7 | 22.98 | 1.000 | 0.00 | 0.00 | 58.05 | 0.00 | 7.6% | 2.165 |
+| `002_route_prior_action_memory` | 422.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_route_prior_gru_memory` | 520.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+
+*Controlled protocol: 20 test maps × 5 seeds = 100 episodes/run, `local` 7×7, `001_actionable_geodesic`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
+<!-- TFP-BENCHMARK:FOX-RM-L3:END -->
+
+![FOX-RM-L3 controlled benchmark](results/FOX-RM-L3/summary.png)
+
 ## Key research techniques
 
 **Action memory.** TFP can encode a short history of *executed actions* separately from visual features. This is deliberately lower-dimensional than asking a recurrent unit to remember the entire observation stream. In local POMDPs, many failures are defined by action sequence—left/right oscillation, repeated forward/backtracking, or leaving an interaction cell—so recent actions provide a direct cue for loop phase and interaction history. In the packaged Task-1 controlled reference, the Action-Memory CNN improves success over the plain CNN baseline (57.8% vs. 37.8%). Earlier development runs with recurrent visual memory were also less stable, but the GRU rows remain deliberately unreported until they complete the same controlled protocol. We therefore treat action history as a strong compact memory prior rather than claiming that more visual recurrence is universally better.
 
 **Tabu and TabuX.** Tabu controllers operate at inference time and detect short repeated behavior patterns without retraining the neural policy. Basic Tabu suppresses recently repeated action cycles; TabuX extends this idea to local state-action basins so the agent can escape persistent deadlocks while preserving the learned policy elsewhere. This separation is useful experimentally: neural learning quality and deployment-time anti-deadlock control can be measured independently. The controller is intentionally lightweight and can be enabled as an ablation without changing PPO optimization.
 
-**Training strategy.** Training uses compact PPO with task-owned model plugins and deterministic experiment presets. Curriculum settings can progress from smaller/easier maps to larger layouts, while evaluation is isolated from training and always uses fixed test maps and seed matrices. Full benchmark runs, smoke integration tests, and custom ablations are explicitly separated in reporting. Recurrent rollouts preserve the exact hidden/action-history context used during data collection so PPO updates do not silently train on a different memory state than the acting policy.
+**Training strategy.** Training uses compact PPO with task-owned model plugins and deterministic experiment presets. Curriculum settings progressively unlock map-size groups; the five-tier room task therefore advances Small → Medium → Large → Large+ → Large++ rather than exposing all large layouts at once. Evaluation is isolated from training and always uses fixed test maps and seed matrices. Full benchmark runs, smoke integration tests, and custom ablations are explicitly separated in reporting. Recurrent rollouts preserve the exact hidden/action-history context used during data collection so PPO updates do not silently train on a different memory state than the acting policy.
 
-**Reward design.** TFP provides sparse, dense, cycle-safe, and interaction-aware rewards as task-scoped plugins. Dense rewards use geodesic progress to make early learning practical; cycle-safe variants use symmetric progress/regression terms so a two-step oscillation cannot accumulate positive shaping reward. Under `valid` masks, interaction-aware rewards add an opportunity cost when the agent stands on a valid pickup/delivery state but ignores the interaction. This makes reward assumptions explicit and enables controlled reward-shaping ablations rather than embedding task logic inside the trainer.
+**Reward design.** TFP provides sparse, dense, cycle-safe, and interaction-aware rewards as task-scoped plugins. Dense rewards use geodesic progress to make early learning practical; cycle-safe variants use symmetric progress/regression terms so a two-step oscillation cannot accumulate positive shaping reward. Under `valid` masks, interaction-aware rewards add an opportunity cost when the agent stands on a valid pickup/delivery state but ignores the interaction. `FOX-RM-L3` V5 uses a stricter **actionable geodesic**: a closed-door crossing costs `TOGGLE + MOVE`, so opening a useful door is rewarded only because it decreases executable path cost; opening an irrelevant door has no standalone bonus. This makes reward assumptions explicit and prevents the door open/close loop present in the earlier formulation.
+
+**Residual route prior.** The V5 room models add a fixed action-logit prior computed only from the observable two-value shortest-route doorway waypoint and adjacent-door cue. PPO learns a residual correction on top of that prior. This hybrid inductive bias is intentionally stronger than a generic CNN because the research question is shifted from rediscovering low-level shortest-path geometry to evaluating transport decisions, door interaction, action memory, and recurrent room-state memory. No global map, room graph, full route, or oracle action is passed to the network.
 
 **GoBI-style exploration.** `GoBI Compact` is a resource-aware intrinsic module that combines lifelong count novelty with episodic reachability expansion estimated by a very small latent dynamics model. From the current latent state it imagines a limited set of short action branches, rewarding states that expand the episode's reachable signature set. The imagination budget is intentionally tiny, making the method suitable for testing whether model-based novelty can improve local exploration without turning TFP into a large world-model training project.
 

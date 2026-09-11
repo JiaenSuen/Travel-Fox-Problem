@@ -65,12 +65,14 @@ def _maps_for_progress(all_maps: Sequence[Path], progress: float, curriculum: bo
     size_groups = sorted({_map_size_key(p) for p in all_maps})
     if not size_groups or size_groups[0][0] >= 10**9:
         return list(all_maps)
-    if progress < 0.33:
-        allowed = set(size_groups[:1])
-    elif progress < 0.66:
-        allowed = set(size_groups[: min(2, len(size_groups))])
+    # Progressive size curriculum. With the legacy three-size tasks this remains
+    # equivalent to 1 -> 2 -> 3 groups; tasks with more scale tiers (e.g. FOX-RM-L3)
+    # unlock one additional tier at a time across the training horizon.
+    if len(size_groups) == 1:
+        allowed_count = 1
     else:
-        allowed = set(size_groups)
+        allowed_count = min(len(size_groups), max(1, int(progress * len(size_groups)) + 1))
+    allowed = set(size_groups[:allowed_count])
     selected = [p for p in all_maps if _map_size_key(p) in allowed]
     return selected or list(all_maps)
 
