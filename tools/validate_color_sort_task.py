@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 from tfp.tasks import create_task_env, get_task
 from tfp.utils import discover_maps
 
-TASK_ID = "TFP-FoxColorSort-Local"
+TASK_ID = "TFP-ColorSort"
 
 
 def shortest_move(env, target):

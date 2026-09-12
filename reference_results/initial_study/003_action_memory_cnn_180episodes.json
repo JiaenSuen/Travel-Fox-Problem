@@ -10,7 +10,7 @@
     "view_size": 5,
     "action_mask_mode": "task",
     "experiment_tag": "initial-controlled-study",
-    "checkpoint": "checkpoints/FOX-TR-L1/003_action_memory_cnn.pt",
+    "checkpoint": "checkpoints/LOCAL-TRANSPORT/003_action_memory_cnn.pt",
     "checkpoint_size_mb": 0.5152,
     "training_seed": 7,
     "model_parameters": 132400,
@@ -452,7 +452,7 @@
   },
   "records": [
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -474,7 +474,7 @@
       "mean_inference_ms": 0.8144212500837966
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -496,7 +496,7 @@
       "mean_inference_ms": 0.5227518126389441
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -518,7 +518,7 @@
       "mean_inference_ms": 0.5097581874906609
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -540,7 +540,7 @@
       "mean_inference_ms": 0.5205410625421791
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -562,7 +562,7 @@
       "mean_inference_ms": 0.4992933123730836
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -584,7 +584,7 @@
       "mean_inference_ms": 0.5251709544609184
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -606,7 +606,7 @@
       "mean_inference_ms": 0.5021493749381989
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -628,7 +628,7 @@
       "mean_inference_ms": 0.5445578123612904
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -650,7 +650,7 @@
       "mean_inference_ms": 0.5325093888030905
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -672,7 +672,7 @@
       "mean_inference_ms": 0.6710681749837022
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -694,7 +694,7 @@
       "mean_inference_ms": 0.4976512692477487
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -716,7 +716,7 @@
       "mean_inference_ms": 0.530712192287935
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -738,7 +738,7 @@
       "mean_inference_ms": 0.5528088460358469
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -760,7 +760,7 @@
       "mean_inference_ms": 0.5069412692277043
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -782,7 +782,7 @@
       "mean_inference_ms": 0.5743395385112448
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -804,7 +804,7 @@
       "mean_inference_ms": 1.2331908845296242
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -826,7 +826,7 @@
       "mean_inference_ms": 0.490410577010782
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -848,7 +848,7 @@
       "mean_inference_ms": 0.512835269266641
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -870,7 +870,7 @@
       "mean_inference_ms": 0.5029428077530331
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -892,7 +892,7 @@
       "mean_inference_ms": 0.5011734230300555
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -914,7 +914,7 @@
       "mean_inference_ms": 0.8855985166557426
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -936,7 +936,7 @@
       "mean_inference_ms": 0.5564217776231494
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -958,7 +958,7 @@
       "mean_inference_ms": 0.5276225000569765
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -980,7 +980,7 @@
       "mean_inference_ms": 0.7251005499900506
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1002,7 +1002,7 @@
       "mean_inference_ms": 0.49541613879632174
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1024,7 +1024,7 @@
       "mean_inference_ms": 0.6899086388835308
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1046,7 +1046,7 @@
       "mean_inference_ms": 0.5520300555114469
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1068,7 +1068,7 @@
       "mean_inference_ms": 1.2634989999343007
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1090,7 +1090,7 @@
       "mean_inference_ms": 0.5944221000125557
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1112,7 +1112,7 @@
       "mean_inference_ms": 0.5355069444400821
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1134,7 +1134,7 @@
       "mean_inference_ms": 0.6809402749468063
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1156,7 +1156,7 @@
       "mean_inference_ms": 0.5298193125327089
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1178,7 +1178,7 @@
       "mean_inference_ms": 0.5111333749141522
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1200,7 +1200,7 @@
       "mean_inference_ms": 0.7545424000151494
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1222,7 +1222,7 @@
       "mean_inference_ms": 0.6047297500231252
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1244,7 +1244,7 @@
       "mean_inference_ms": 0.542335999966781
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1266,7 +1266,7 @@
       "mean_inference_ms": 0.5102050000687086
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1288,7 +1288,7 @@
       "mean_inference_ms": 2.267390312454154
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1310,7 +1310,7 @@
       "mean_inference_ms": 0.5098714999007825
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1332,7 +1332,7 @@
       "mean_inference_ms": 0.5168888123421311
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1354,7 +1354,7 @@
       "mean_inference_ms": 0.5283813847409664
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1376,7 +1376,7 @@
       "mean_inference_ms": 0.5381908846314988
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1398,7 +1398,7 @@
       "mean_inference_ms": 0.6677148333134634
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1420,7 +1420,7 @@
       "mean_inference_ms": 0.6303969999652719
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1442,7 +1442,7 @@
       "mean_inference_ms": 0.636972846223216
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1464,7 +1464,7 @@
       "mean_inference_ms": 1.2508358462092963
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1486,7 +1486,7 @@
       "mean_inference_ms": 0.516722230783601
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1508,7 +1508,7 @@
       "mean_inference_ms": 0.5363158078090726
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1530,7 +1530,7 @@
       "mean_inference_ms": 0.5479787142966026
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1552,7 +1552,7 @@
       "mean_inference_ms": 1.5850541922890653
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1574,7 +1574,7 @@
       "mean_inference_ms": 0.7630630792201979
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1596,7 +1596,7 @@
       "mean_inference_ms": 0.5337481944328223
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1618,7 +1618,7 @@
       "mean_inference_ms": 0.7539268458041685
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1640,7 +1640,7 @@
       "mean_inference_ms": 0.7139917333309617
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1662,7 +1662,7 @@
       "mean_inference_ms": 0.7167712457961292
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1684,7 +1684,7 @@
       "mean_inference_ms": 0.9139826110590042
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1706,7 +1706,7 @@
       "mean_inference_ms": 1.1877506666577473
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1728,7 +1728,7 @@
       "mean_inference_ms": 0.5196887221801363
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1750,7 +1750,7 @@
       "mean_inference_ms": 0.669048733342
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1772,7 +1772,7 @@
       "mean_inference_ms": 0.7777305208302702
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1794,7 +1794,7 @@
       "mean_inference_ms": 0.557522687358869
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1816,7 +1816,7 @@
       "mean_inference_ms": 1.9608801875961035
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1838,7 +1838,7 @@
       "mean_inference_ms": 0.5284868888237624
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1860,7 +1860,7 @@
       "mean_inference_ms": 0.5139599999779421
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1882,7 +1882,7 @@
       "mean_inference_ms": 0.5447080625913259
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1904,7 +1904,7 @@
       "mean_inference_ms": 0.5013127499182701
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1926,7 +1926,7 @@
       "mean_inference_ms": 0.5332717500436956
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1948,7 +1948,7 @@
       "mean_inference_ms": 0.5653155623690509
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1970,7 +1970,7 @@
       "mean_inference_ms": 1.9510938126359179
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1992,7 +1992,7 @@
       "mean_inference_ms": 0.5194450000090001
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2014,7 +2014,7 @@
       "mean_inference_ms": 0.5332625385283161
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2036,7 +2036,7 @@
       "mean_inference_ms": 0.5331873461238081
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2058,7 +2058,7 @@
       "mean_inference_ms": 0.9168140499645637
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2080,7 +2080,7 @@
       "mean_inference_ms": 0.6127268846704772
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2102,7 +2102,7 @@
       "mean_inference_ms": 0.6155556922679423
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2124,7 +2124,7 @@
       "mean_inference_ms": 0.7853466943793642
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2146,7 +2146,7 @@
       "mean_inference_ms": 0.5121385384672277
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2168,7 +2168,7 @@
       "mean_inference_ms": 0.816798144448209
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2190,7 +2190,7 @@
       "mean_inference_ms": 0.6865480111122856
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2212,7 +2212,7 @@
       "mean_inference_ms": 0.8130730055654567
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2234,7 +2234,7 @@
       "mean_inference_ms": 0.743006066674449
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2256,7 +2256,7 @@
       "mean_inference_ms": 0.5471590909358135
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2278,7 +2278,7 @@
       "mean_inference_ms": 0.8181011583853129
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2300,7 +2300,7 @@
       "mean_inference_ms": 0.6986663416569172
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2322,7 +2322,7 @@
       "mean_inference_ms": 1.2725382222369162
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2344,7 +2344,7 @@
       "mean_inference_ms": 0.5497567224210798
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2366,7 +2366,7 @@
       "mean_inference_ms": 0.5238406316062825
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2388,7 +2388,7 @@
       "mean_inference_ms": 1.1552942776991888
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2410,7 +2410,7 @@
       "mean_inference_ms": 0.5475857499897591
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2432,7 +2432,7 @@
       "mean_inference_ms": 0.5182789583197215
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2454,7 +2454,7 @@
       "mean_inference_ms": 0.7580745749995307
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2476,7 +2476,7 @@
       "mean_inference_ms": 2.2202990626851715
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2498,7 +2498,7 @@
       "mean_inference_ms": 0.7211790583672458
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2520,7 +2520,7 @@
       "mean_inference_ms": 0.5205358833184922
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2542,7 +2542,7 @@
       "mean_inference_ms": 1.967948812477971
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2564,7 +2564,7 @@
       "mean_inference_ms": 0.7780657083306627
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2586,7 +2586,7 @@
       "mean_inference_ms": 0.5933647498750361
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2608,7 +2608,7 @@
       "mean_inference_ms": 0.7269402499863039
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2630,7 +2630,7 @@
       "mean_inference_ms": 0.7275414499872568
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2652,7 +2652,7 @@
       "mean_inference_ms": 0.7176152666185468
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2674,7 +2674,7 @@
       "mean_inference_ms": 0.6698452499575878
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2696,7 +2696,7 @@
       "mean_inference_ms": 0.5647233846712669
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2718,7 +2718,7 @@
       "mean_inference_ms": 0.7917717944413502
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2740,7 +2740,7 @@
       "mean_inference_ms": 0.8688691500133751
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2762,7 +2762,7 @@
       "mean_inference_ms": 0.6866156944245935
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2784,7 +2784,7 @@
       "mean_inference_ms": 0.7042700444395046
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2806,7 +2806,7 @@
       "mean_inference_ms": 0.5913447691734921
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2828,7 +2828,7 @@
       "mean_inference_ms": 0.6679239222396265
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2850,7 +2850,7 @@
       "mean_inference_ms": 0.8717673667029481
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2872,7 +2872,7 @@
       "mean_inference_ms": 0.6957714278087224
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2894,7 +2894,7 @@
       "mean_inference_ms": 0.653953241654411
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2916,7 +2916,7 @@
       "mean_inference_ms": 0.5296648611319041
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2938,7 +2938,7 @@
       "mean_inference_ms": 0.536231789426797
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2960,7 +2960,7 @@
       "mean_inference_ms": 0.7799483666834325
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2982,7 +2982,7 @@
       "mean_inference_ms": 0.7342512249844427
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3004,7 +3004,7 @@
       "mean_inference_ms": 1.1911149722689314
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3026,7 +3026,7 @@
       "mean_inference_ms": 0.6231563375498202
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3048,7 +3048,7 @@
       "mean_inference_ms": 1.1860637222424784
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3070,7 +3070,7 @@
       "mean_inference_ms": 0.7351046624724707
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3092,7 +3092,7 @@
       "mean_inference_ms": 0.7233816166490215
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3114,7 +3114,7 @@
       "mean_inference_ms": 0.5535215750342104
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3136,7 +3136,7 @@
       "mean_inference_ms": 0.7344858833145432
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3158,7 +3158,7 @@
       "mean_inference_ms": 0.7624940916988029
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3180,7 +3180,7 @@
       "mean_inference_ms": 0.7181027000569884
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3202,7 +3202,7 @@
       "mean_inference_ms": 0.7148539666635164
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3224,7 +3224,7 @@
       "mean_inference_ms": 0.731793133309111
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3246,7 +3246,7 @@
       "mean_inference_ms": 0.73215124999327
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3268,7 +3268,7 @@
       "mean_inference_ms": 0.7238350416325071
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3290,7 +3290,7 @@
       "mean_inference_ms": 0.5965248890081258
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3312,7 +3312,7 @@
       "mean_inference_ms": 0.7204469750149656
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3334,7 +3334,7 @@
       "mean_inference_ms": 0.5864486537785314
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3356,7 +3356,7 @@
       "mean_inference_ms": 0.6639639110491973
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3378,7 +3378,7 @@
       "mean_inference_ms": 0.7854627055470095
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3400,7 +3400,7 @@
       "mean_inference_ms": 0.6561658110462708
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3422,7 +3422,7 @@
       "mean_inference_ms": 0.7972202388726954
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3444,7 +3444,7 @@
       "mean_inference_ms": 0.6700869277766388
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3466,7 +3466,7 @@
       "mean_inference_ms": 0.6440637221759162
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3488,7 +3488,7 @@
       "mean_inference_ms": 0.5430469615510867
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3510,7 +3510,7 @@
       "mean_inference_ms": 0.5306761000004675
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3532,7 +3532,7 @@
       "mean_inference_ms": 0.5346149389121516
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3554,7 +3554,7 @@
       "mean_inference_ms": 0.5865050556571482
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3576,7 +3576,7 @@
       "mean_inference_ms": 0.5171944475190876
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3598,7 +3598,7 @@
       "mean_inference_ms": 0.6603691041656626
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3620,7 +3620,7 @@
       "mean_inference_ms": 0.6079502250145197
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3642,7 +3642,7 @@
       "mean_inference_ms": 0.6482032791609527
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3664,7 +3664,7 @@
       "mean_inference_ms": 0.7361003541708063
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3686,7 +3686,7 @@
       "mean_inference_ms": 1.16581447221304
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3708,7 +3708,7 @@
       "mean_inference_ms": 0.5441842499244053
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3730,7 +3730,7 @@
       "mean_inference_ms": 0.5451248333782941
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3752,7 +3752,7 @@
       "mean_inference_ms": 0.6265453333374656
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3774,7 +3774,7 @@
       "mean_inference_ms": 0.5644899375738532
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3796,7 +3796,7 @@
       "mean_inference_ms": 0.5348592499672122
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3818,7 +3818,7 @@
       "mean_inference_ms": 0.7614244167067833
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3840,7 +3840,7 @@
       "mean_inference_ms": 0.5945563751197369
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3862,7 +3862,7 @@
       "mean_inference_ms": 0.5218204374841662
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3884,7 +3884,7 @@
       "mean_inference_ms": 0.5329762500423385
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3906,7 +3906,7 @@
       "mean_inference_ms": 2.262380125046093
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3928,7 +3928,7 @@
       "mean_inference_ms": 0.5523370623450319
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3950,7 +3950,7 @@
       "mean_inference_ms": 0.5220071875555732
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3972,7 +3972,7 @@
       "mean_inference_ms": 0.6270675625046351
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3994,7 +3994,7 @@
       "mean_inference_ms": 0.6675011222291182
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4016,7 +4016,7 @@
       "mean_inference_ms": 0.8137471333409647
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4038,7 +4038,7 @@
       "mean_inference_ms": 0.6569411722416084
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4060,7 +4060,7 @@
       "mean_inference_ms": 0.8069458166573895
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4082,7 +4082,7 @@
       "mean_inference_ms": 0.6046537895073063
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4104,7 +4104,7 @@
       "mean_inference_ms": 0.8237442722070732
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4126,7 +4126,7 @@
       "mean_inference_ms": 0.7209668833335551
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4148,7 +4148,7 @@
       "mean_inference_ms": 0.8672833610843453
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4170,7 +4170,7 @@
       "mean_inference_ms": 0.6356910715307355
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4192,7 +4192,7 @@
       "mean_inference_ms": 1.599335576779245
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4214,7 +4214,7 @@
       "mean_inference_ms": 0.7085889041680579
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4236,7 +4236,7 @@
       "mean_inference_ms": 0.5859367777247826
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4258,7 +4258,7 @@
       "mean_inference_ms": 0.7482045791107339
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4280,7 +4280,7 @@
       "mean_inference_ms": 0.744151229181019
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4302,7 +4302,7 @@
       "mean_inference_ms": 1.152492305613527
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4324,7 +4324,7 @@
       "mean_inference_ms": 0.5258549443725415
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4346,7 +4346,7 @@
       "mean_inference_ms": 0.7923531665659943
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4368,7 +4368,7 @@
       "mean_inference_ms": 1.307934444386976
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4390,7 +4390,7 @@
       "mean_inference_ms": 0.824765262522457
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "003_action_memory_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",

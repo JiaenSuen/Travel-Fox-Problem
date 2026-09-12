@@ -3,7 +3,7 @@ from pathlib import Path
 from tfp.tasks import create_task_env, get_task
 
 
-TASK_ID = "TFP-FoxRoomTransport-Local"
+TASK_ID = "TFP-RoomTransport"
 
 
 def _env(seed: int = 107):

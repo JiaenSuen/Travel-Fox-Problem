@@ -10,18 +10,18 @@ from tfp.utils import discover_maps
 
 
 def test_task_scoped_plugins_are_disjoint():
-    transport = discover_model_plugins("TFP-FoxTransport-Local")
-    color = discover_model_plugins("TFP-FoxColorSort-Local")
+    transport = discover_model_plugins("TFP-LocalTransport")
+    color = discover_model_plugins("TFP-ColorSort")
     assert "001_simple_cnn" in transport
     assert "001_color_cnn" in color
     assert "001_color_cnn" not in transport
     assert "001_simple_cnn" not in color
-    assert "001_dense_transport" in discover_reward_plugins("TFP-FoxTransport-Local")
-    assert "001_dense_color_sort" in discover_reward_plugins("TFP-FoxColorSort-Local")
+    assert "001_dense_transport" in discover_reward_plugins("TFP-LocalTransport")
+    assert "001_dense_color_sort" in discover_reward_plugins("TFP-ColorSort")
 
 
 def test_color_sort_map_counts_and_views():
-    task = get_task("TFP-FoxColorSort-Local")
+    task = get_task("TFP-ColorSort")
     train = discover_maps(task.train_map_dir)
     test = discover_maps(task.test_map_dir)
     assert len(train) == 45
@@ -34,7 +34,7 @@ def test_color_sort_map_counts_and_views():
 
 
 def test_color_sort_requires_matching_goal():
-    task = get_task("TFP-FoxColorSort-Local")
+    task = get_task("TFP-ColorSort")
     maps = discover_maps(task.test_map_dir)
     env = create_task_env(task.env_id, maps[:1], reward_module=task.default_reward)
     env.reset(seed=103, map_path=maps[0])
@@ -52,14 +52,14 @@ def test_color_sort_requires_matching_goal():
 
 
 def test_result_report_uses_stable_files(tmp_path: Path):
-    readme, image = build_task_report(tmp_path, "FOX-TEST", "Test Task")
+    readme, image = build_task_report(tmp_path, "TEST-TASK", "Test Task")
     assert readme.name == "README.md"
     assert image.name == "summary.png"
     assert readme.exists() and image.exists()
 
 
 def test_room_transport_task_assets_and_views():
-    task = get_task("TFP-FoxRoomTransport-Local")
+    task = get_task("TFP-RoomTransport")
     train = discover_maps(task.train_map_dir)
     test = discover_maps(task.test_map_dir)
     assert len(train) == 50
@@ -81,7 +81,7 @@ def test_room_transport_task_assets_and_views():
 
 
 def test_room_transport_closed_door_toggle_changes_traversability():
-    task = get_task("TFP-FoxRoomTransport-Local")
+    task = get_task("TFP-RoomTransport")
     maps = discover_maps(task.test_map_dir)
     env = create_task_env(task.env_id, maps[:1], reward_module=task.default_reward)
     env.reset(seed=107, map_path=maps[0])

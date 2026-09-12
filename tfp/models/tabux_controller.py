@@ -6,7 +6,7 @@ from typing import Sequence
 
 import torch
 
-# Fox Transport action semantics. TabuX intentionally uses only executed actions
+# Local Transport action semantics. TabuX intentionally uses only executed actions
 # and the legal-action mask; it never reads the hidden map or oracle distance.
 _MOVE_DELTA = {
     0: (0, -1),  # UP

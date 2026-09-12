@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TASK_ROOT = ROOT / "tfp" / "tasks" / "fox_room_transport" / "maps"
+TASK_ROOT = ROOT / "tfp" / "tasks" / "room_transport" / "maps"
 
 TIERS = {
     "small": (15, 2, 2),

@@ -13,7 +13,7 @@ def model(name):
 
 class TFPCoreModelTests(unittest.TestCase):
     def test_benchmark_counts(self):
-        task=get_task('TFP-FoxTransport-Local')
+        task=get_task('TFP-LocalTransport')
         self.assertEqual(len(discover_maps(task.train_map_dir)),54)
         self.assertEqual(len(discover_maps(task.test_map_dir)),18)
 

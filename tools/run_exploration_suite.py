@@ -47,7 +47,7 @@ def main() -> None:
     parser.add_argument("--models", nargs="*", default=list(MODELS))
     args = parser.parse_args()
 
-    task = get_task("TFP-FoxTransport-Local")
+    task = get_task("TFP-LocalTransport")
     all_train = discover_maps(task.train_map_dir)
     all_test = discover_maps(task.test_map_dir)
     if args.mode == "smoke":

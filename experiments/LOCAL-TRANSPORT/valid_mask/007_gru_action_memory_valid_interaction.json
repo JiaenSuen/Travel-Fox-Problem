@@ -1,0 +1,23 @@
+{
+  "task": "TFP-LocalTransport",
+  "model": "007_ppo_gru_action_memory",
+  "policy": "001_ppo_categorical",
+  "reward": "003_valid_interaction_transport",
+  "device": "cuda",
+  "timesteps": 32768,
+  "num_envs": 16,
+  "seed": 7,
+  "view_size": 5,
+  "action_mask": "valid",
+  "curriculum": true,
+  "rollout": 64,
+  "epochs": 4,
+  "minibatch": 256,
+  "gamma": 0.98,
+  "gae_lambda": 0.95,
+  "clip": 0.2,
+  "lr": 0.0004,
+  "entropy": 0.012,
+  "eval_every": 8192,
+  "experiment_tag": "valid_interaction_gru_action_memory"
+}

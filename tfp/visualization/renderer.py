@@ -50,6 +50,17 @@ class FoxRenderer:
                     draw.line((x0, y1, x1, y1), fill=(230, 233, 238), width=1)
                     draw.line((x1, y0, x1, y1), fill=(230, 233, 238), width=1)
 
+        # Optional motion track for dynamic cargo tasks.
+        if hasattr(env, "render_track"):
+            for tr, tc in env.render_track():
+                x0, y0 = ox + tc * tile, oy + tr * tile
+                x1, y1 = x0 + tile - 1, y0 + tile - 1
+                mid_y = (y0 + y1) // 2
+                draw.line((x0 + 2, mid_y, x1 - 2, mid_y), fill=(116, 126, 139), width=max(2, tile // 10))
+                if tile >= 18:
+                    draw.line((x0 + 3, y0 + 4, x0 + 3, y1 - 4), fill=(172, 180, 190), width=1)
+                    draw.line((x1 - 3, y0 + 4, x1 - 3, y1 - 4), fill=(172, 180, 190), width=1)
+
         # Optional stateful doors for multi-room tasks. Closed doors are drawn as
         # solid panels; open doors keep a visible frame while exposing the floor.
         if hasattr(env, "render_doors"):
@@ -76,7 +87,7 @@ class FoxRenderer:
         for color, (gr, gc) in entities.get("goals", []):
             gx0, gy0 = ox + gc * tile, oy + gr * tile
             pad = max(2, tile // 7)
-            if env.TASK_CODE in {"FOX-TR-L1", "FOX-RM-L3"}:
+            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION"}:
                 fill, outline = (104, 187, 139), (59, 139, 98)
             else:
                 base = color_palette[int(color) % len(color_palette)]
@@ -90,7 +101,7 @@ class FoxRenderer:
         for color, (rr, rc) in entities.get("objects", []):
             x0, y0 = ox + rc * tile, oy + rr * tile
             p = max(3, tile // 5)
-            if env.TASK_CODE in {"FOX-TR-L1", "FOX-RM-L3"}:
+            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION"}:
                 fill, outline = (244, 178, 75), (181, 116, 36)
             else:
                 fill = color_palette[int(color) % len(color_palette)]
@@ -99,6 +110,28 @@ class FoxRenderer:
                 (x0 + p, y0 + p, x0 + tile - p, y0 + tile - p),
                 radius=max(2, tile // 8), fill=fill, outline=outline, width=max(1, tile // 12),
             )
+
+        if hasattr(env, "render_vehicle") and not getattr(env, "carrying", False):
+            vr, vc = env.render_vehicle()
+            x0, y0 = ox + vc * tile, oy + vr * tile
+            pad = max(2, tile // 8)
+            draw.rounded_rectangle((x0 + pad, y0 + tile//2, x0 + tile - pad, y0 + tile - pad), radius=max(2, tile//10), outline=(72, 82, 96), width=max(2, tile//12))
+            wheel = max(2, tile // 10)
+            draw.ellipse((x0 + pad, y0 + tile - pad - wheel, x0 + pad + 2*wheel, y0 + tile - pad + wheel), fill=(55, 62, 72))
+            draw.ellipse((x0 + tile - pad - 2*wheel, y0 + tile - pad - wheel, x0 + tile - pad, y0 + tile - pad + wheel), fill=(55, 62, 72))
+
+        if hasattr(env, "render_hazards"):
+            for kind, (hr, hc) in env.render_hazards():
+                x0, y0 = ox + hc * tile, oy + hr * tile
+                cx, cy = x0 + tile // 2, y0 + tile // 2
+                rad = max(4, int(tile * 0.28))
+                if kind == "wolf":
+                    draw.polygon([(cx-rad, cy-rad//2), (cx-rad//2, cy-rad-3), (cx, cy-rad//2)], fill=(246, 247, 249), outline=(112, 120, 132))
+                    draw.polygon([(cx+rad, cy-rad//2), (cx+rad//2, cy-rad-3), (cx, cy-rad//2)], fill=(246, 247, 249), outline=(112, 120, 132))
+                    draw.ellipse((cx-rad, cy-rad, cx+rad, cy+rad), fill=(246, 247, 249), outline=(112, 120, 132), width=max(1, tile//14))
+                    eye = max(1, tile // 22)
+                    draw.ellipse((cx-rad//3-eye, cy-eye, cx-rad//3+eye, cy+eye), fill=(35, 39, 46))
+                    draw.ellipse((cx+rad//3-eye, cy-eye, cx+rad//3+eye, cy+eye), fill=(35, 39, 46))
 
         ar, ac = env.agent_pos
         x0, y0 = ox + ac * tile, oy + ar * tile

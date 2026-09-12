@@ -35,7 +35,7 @@ class PPOConfig:
     max_grad_norm: float = 0.5
     eval_every: int = 20_000
     seed: int = 7
-    task_id: str = "TFP-FoxTransport-Local"
+    task_id: str = "TFP-LocalTransport"
     observation_mode: str = "local"
     view_size: int = 5
     action_mask_mode: str = "task"
@@ -66,7 +66,7 @@ def _maps_for_progress(all_maps: Sequence[Path], progress: float, curriculum: bo
     if not size_groups or size_groups[0][0] >= 10**9:
         return list(all_maps)
     # Progressive size curriculum. With the legacy three-size tasks this remains
-    # equivalent to 1 -> 2 -> 3 groups; tasks with more scale tiers (e.g. FOX-RM-L3)
+    # equivalent to 1 -> 2 -> 3 groups; tasks with more scale tiers (e.g. ROOM-DOOR-TRANSPORT)
     # unlock one additional tier at a time across the training horizon.
     if len(size_groups) == 1:
         allowed_count = 1

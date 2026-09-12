@@ -290,7 +290,7 @@ def evaluate_policy(
 def load_checkpoint_model(checkpoint_path: str | Path, device: torch.device) -> tuple[nn.Module, dict]:
     checkpoint = torch.load(checkpoint_path, map_location=device)
     module_name = checkpoint.get("model_module", "001_simple_cnn")
-    task_id = str(checkpoint.get("task_id", "TFP-FoxTransport-Local"))
+    task_id = str(checkpoint.get("task_id", "TFP-LocalTransport"))
     _, factory = load_model_plugin(module_name, task_id=task_id)
     model = factory(tuple(checkpoint["observation_shape"]), int(checkpoint["action_count"])).to(device)
     model.load_state_dict(checkpoint["model_state"])

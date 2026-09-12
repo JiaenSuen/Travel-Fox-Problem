@@ -313,7 +313,7 @@ class TFPStudio(tk.Tk):
         style.configure("Horizontal.TScrollbar", background=PALETTE["scroll"], troughcolor=PALETTE["scroll_trough"], bordercolor=PALETTE["scroll_trough"], arrowcolor=PALETTE["muted"], relief="flat")
 
     def _build_vars(self) -> None:
-        self.task_var = tk.StringVar(value="TFP-FoxTransport-Local")
+        self.task_var = tk.StringVar(value="TFP-LocalTransport")
         self.model_var = tk.StringVar(value="001_simple_cnn")
         self.policy_var = tk.StringVar(value="001_ppo_categorical")
         self.reward_var = tk.StringVar(value="001_dense_transport")
@@ -352,7 +352,7 @@ class TFPStudio(tk.Tk):
         self.metric_loss_var = tk.StringVar(value="—")
         self.runtime_var = tk.StringVar(value="Checking runtime…")
         self.experiment_tag_var = tk.StringVar(value="")
-        self.compare_task_var = tk.StringVar(value="FOX-TR-L1")
+        self.compare_task_var = tk.StringVar(value="LOCAL-TRANSPORT")
         self.compare_scope_var = tk.StringVar(value="All records")
 
     def _build_ui(self) -> None:

@@ -1,40 +1,53 @@
 # TFP — Traveling Fox Problems
 
-**A lightweight PyTorch POMDP benchmark for controlled reinforcement-learning studies on local perception, memory, exploration, interaction timing, and deadlock behavior.**
+**A lightweight PyTorch benchmark for reinforcement learning under local perception, memory, interaction, exploration, moving targets, and dynamic hazards.**
 
 ![TFP Studio](assets/demo.png)
 
-TFP is organized as a multi-task research framework rather than a single environment. Each task owns its maps, models, rewards, experiment presets, checkpoints, and result namespace, while PPO training, evaluation, diagnostics, and visualization remain shared. The repository is designed for compact ablation studies on resource-constrained agents using reproducible **map × seed** evaluation.
+TFP is organized as task-scoped research environments sharing one PPO/evaluation stack. Each task owns its maps, models, rewards, experiment presets, checkpoints, and result namespace. Experiments use deterministic map × seed evaluation and support 5×5 / 7×7 local perception.
 
 ## Tasks
 
-| Code | Task | Train / test maps | Local view | Objective |
+| Code | Task | Train / test maps | View | Research focus |
 |---|---|---:|---|---|
-| `FOX-TR-L1` | **Fox Transport · Local** | 54 / 18 | 5×5, 7×7 | find one cargo item and deliver it to the destination |
-| `FOX-CS-L2` | **Fox Color Sort · Local** | 45 / 15 | 5×5, 7×7 | collect 2–5 colored objects and deliver each to the matching colored destination |
-| `FOX-RM-L3` | **Fox Room Transport · Doors** | 50 / 20 | 5×5, 7×7 | find seeded cargo across variable multi-room layouts, operate doors, and deliver it across rooms |
+| `LOCAL-TRANSPORT` | **Local Transport** | 54 / 18 | 5×5, 7×7 | exploration, short cycles, pickup/delivery timing, compact memory |
+| `COLOR-SORT` | **Color-Matched Sorting** | 45 / 15 | 5×5, 7×7 | multi-object state, goal conditioning, target switching |
+| `ROOM-DOOR-TRANSPORT` | **Multi-Room Door Transport** | 50 / 20 | 5×5, 7×7 | long-horizon navigation, room memory, stateful doors |
+| `MOVING-CARGO-EVASION` | **Moving Cargo & Predator Avoidance** | 45 / 15 | 5×5, 7×7 | moving-target interception, timing, temporal dynamics, hazard avoidance |
 
-### FOX-TR-L1 — local transport
+### Local Transport
 
-A partially observable navigation-and-interaction task intended to expose short behavior cycles, perceptual aliasing, delayed pickup/delivery decisions, and exploration failures. Maps span 10×10, 15×15, and 20×20 layouts with multiple structural families. It is the primary task for studying **action memory, recurrent policies, Tabu/TabuX, intrinsic exploration, bootstrap training, and reward-shaping ablations**.
+Single-cargo transport across 10×10, 15×15, and 20×20 layouts. The agent observes only a local crop and must locate cargo, execute `PICKUP`, and deliver it to the destination. The task is intentionally compact enough for controlled ablations while still exposing perceptual aliasing, exploration failure, interaction loops, and deployment-time deadlocks. It is the primary environment for Action Memory, GRU policies, Tabu/TabuX, GoBI-style exploration, bootstrap recurrent training, and reward-shaping studies.
 
-### FOX-CS-L2 — color-conditioned sorting
+### Color-Matched Sorting
 
-A lower-topological-complexity but higher task-state-complexity problem. Each episode contains 2–5 colored objects and matching destinations; the fox carries one item at a time and must infer which interaction and target are currently relevant from a local observation. Maps span 8×8, 10×10, and 12×12 layouts. The task is intended for **goal conditioning, multi-stage completion, interaction learning, and recurrent memory under color-specific objectives**.
+Each episode contains 2–5 colored objects and matching destinations. Capacity is one, so the policy repeatedly switches between object selection, pickup, color-conditioned routing, and delivery. Layouts span 8×8, 10×10, and 12×12 maps. The task isolates multi-stage completion, target conditioning, interaction timing, and recurrent memory without the topological complexity of the larger room environment.
 
-### FOX-RM-L3 — multi-room transport with doors
+### Multi-Room Door Transport
 
-A longer-horizon transport task over variable multi-room layouts. Five packaged scale tiers cover **15×15 / 19×19 / 23×23 / 27×27 / 31×31** maps, from 2×2 to 4×4 room lattices. V5 replaces the unsuccessful V4 room baselines with a **Residual Route-Prior PPO** formulation: the policy still sees only a local 5×5/7×7 crop, but receives a two-value shortest-route doorway waypoint cue instead of a misleading straight-line target vector. Closed doors contribute an explicit `TOGGLE + MOVE` cost to the learning distance, preventing door-toggle reward farming. The three V5 models isolate structured route fusion, compact action memory, and recurrent room memory under one common reward.
+A long-horizon transport problem over 15×15 to 31×31 layouts with 4–16 rooms. Cargo and destination locations vary by seed and doors may begin open or closed. Closed doors require `TOGGLE_DOOR`. The policy receives local perception plus a compact next-doorway route cue; it does not receive the global map or complete route. The default reward uses executable action cost, so crossing a closed door counts as `TOGGLE + MOVE` and irrelevant door toggles receive no standalone benefit.
 
-`FOX-TR-L1` and `FOX-CS-L2` use six actions: four-neighbor motion, `PICKUP`, and `DROP`. `FOX-RM-L3` adds a seventh `TOGGLE_DOOR` action. `task` masking forces pickup/delivery when required but leaves door operation as a learned decision; `valid` masking leaves all valid interactions to the policy.
+### Moving Cargo & Predator Avoidance
 
-## Controlled benchmark results
+Cargo begins on a carrier moving continuously around a closed track. The agent must predict an interception point, reach the carrier at the correct time, pick up the cargo, and deliver it while a white wolf independently roams the traversable map. Contact with the wolf terminates the episode. The observation adds compact carrier motion/phase context and wolf bearing/proximity telemetry to local vision. A `WAIT` action supports interception timing. Maps span 12×12, 16×16, and 20×20 layouts with disjoint train/test sets.
 
-README benchmark tables are **not last-run snapshots**. A result enters these tables only when it completes the task's full packaged test-map × default-seed matrix under the controlled protocol: default local view, default reward, `task` mask, and `001_ppo_categorical`. Repeated qualifying runs for the same model are averaged. Smoke tests, partial evaluations, custom rewards, and other ablations remain available in **TFP Studio → Compare** but cannot silently overwrite the benchmark.
+## Moving-cargo method
 
-### FOX-TR-L1
+The dynamic task uses one reward and three models so architecture comparisons do not mix reward definitions.
 
-<!-- TFP-BENCHMARK:FOX-TR-L1:START -->
+| Model | Design | Intended advantage |
+|---|---|---|
+| `001_intercept_safety_cnn` | local CNN + motion-context encoder + residual interception/safety prior | strongest low-complexity baseline for immediate dynamic decisions |
+| `002_intercept_action_memory` | baseline + learnable executed-action history | captures pursuit timing, waits, short oscillations, and evasive maneuver context |
+| `003_intercept_gru_memory` | baseline + action memory + GRU | estimates longer carrier/hazard dynamics under partial observability |
+
+**`001_intercept_safety_potential`** uses symmetric progress toward the earliest feasible carrier interception before pickup and toward the delivery goal afterwards. The reward adds pickup/delivery milestones, invalid-action cost, local wolf-risk shaping, and a large terminal collision penalty. Progress is measured against the same dynamic-state snapshot before and after the agent action, so the agent cannot earn reward merely because the carrier moves closer by itself.
+
+## Benchmark results
+
+### LOCAL-TRANSPORT
+
+<!-- TFP-BENCHMARK:LOCAL-TRANSPORT:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `001_simple_cnn` | 121.8k | 1 | 180 | 37.8% | 37.8% | 73.9% | 125.3 | 5.42 | 0.996 | 0.00 | 0.00 | 107.61 | 0.00 | 57.1% | 0.277 |
@@ -48,71 +61,83 @@ README benchmark tables are **not last-run snapshots**. A result enters these ta
 | `009_ppo_gru_action_memory_tabux` | 141.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `010_ppo_gru_gobi` | 133.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-*Controlled protocol: 18 test maps × 10 seeds = 180 episodes/run, `local` 5×5, `001_dense_transport`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
-<!-- TFP-BENCHMARK:FOX-TR-L1:END -->
+*Evaluation: 18 test maps × 10 seeds = 180 episodes/run · `local` 5×5 · `001_dense_transport` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+<!-- TFP-BENCHMARK:LOCAL-TRANSPORT:END -->
 
-![FOX-TR-L1 controlled benchmark](results/FOX-TR-L1/summary.png)
+![LOCAL-TRANSPORT benchmark](results/LOCAL-TRANSPORT/summary.png)
 
-### FOX-CS-L2
+### COLOR-SORT
 
-<!-- TFP-BENCHMARK:FOX-CS-L2:START -->
+<!-- TFP-BENCHMARK:COLOR-SORT:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_color_cnn` | 125.3k | 1 | 75 | 84.0% | 90.4% | 100.0% | 82.7 | 12.05 | 0.969 | 0.00 | 0.00 | 53.67 | 0.00 | 14.7% | 0.624 |
+| `001_color_cnn` | 125.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `002_goal_conditioned_cnn` | 233.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `003_goal_gru_action_memory` | 144.9k | 1 | 75 | 89.3% | 92.2% | 98.7% | 65.2 | 12.84 | 0.975 | 0.00 | 0.00 | 35.31 | 0.00 | 10.0% | 1.832 |
+| `003_goal_gru_action_memory` | 144.9k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-*Controlled protocol: 15 test maps × 5 seeds = 75 episodes/run, `local` 5×5, `001_dense_color_sort`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
-<!-- TFP-BENCHMARK:FOX-CS-L2:END -->
+*Evaluation: 15 test maps × 5 seeds = 75 episodes/run · `local` 5×5 · `001_dense_color_sort` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+<!-- TFP-BENCHMARK:COLOR-SORT:END -->
 
-![FOX-CS-L2 controlled benchmark](results/FOX-CS-L2/summary.png)
+![COLOR-SORT benchmark](results/COLOR-SORT/summary.png)
 
-### FOX-RM-L3
+### ROOM-DOOR-TRANSPORT
 
-<!-- TFP-BENCHMARK:FOX-RM-L3:START -->
+<!-- TFP-BENCHMARK:ROOM-DOOR-TRANSPORT:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_route_prior_cnn` | 393.2k | 1 | 100 | 92.0% | 92.0% | 95.0% | 103.7 | 22.98 | 1.000 | 0.00 | 0.00 | 58.05 | 0.00 | 7.6% | 2.165 |
+| `001_route_prior_cnn` | 393.2k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `002_route_prior_action_memory` | 422.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | `003_route_prior_gru_memory` | 520.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-*Controlled protocol: 20 test maps × 5 seeds = 100 episodes/run, `local` 7×7, `001_actionable_geodesic`, `task` mask, `001_ppo_categorical`. Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet.*
-<!-- TFP-BENCHMARK:FOX-RM-L3:END -->
+*Evaluation: 20 test maps × 5 seeds = 100 episodes/run · `local` 7×7 · `001_actionable_geodesic` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+<!-- TFP-BENCHMARK:ROOM-DOOR-TRANSPORT:END -->
 
-![FOX-RM-L3 controlled benchmark](results/FOX-RM-L3/summary.png)
+![ROOM-DOOR-TRANSPORT benchmark](results/ROOM-DOOR-TRANSPORT/summary.png)
+
+### MOVING-CARGO-EVASION
+
+<!-- TFP-BENCHMARK:MOVING-CARGO-EVASION:START -->
+| Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_intercept_safety_cnn` | 446.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `002_intercept_action_memory` | 478.7k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_intercept_gru_memory` | 615.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+
+*Evaluation: 15 test maps × 5 seeds = 75 episodes/run · `local` 7×7 · `001_intercept_safety_potential` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+<!-- TFP-BENCHMARK:MOVING-CARGO-EVASION:END -->
+
+![MOVING-CARGO-EVASION benchmark](results/MOVING-CARGO-EVASION/summary.png)
 
 ## Key research techniques
 
-**Action memory.** TFP can encode a short history of *executed actions* separately from visual features. This is deliberately lower-dimensional than asking a recurrent unit to remember the entire observation stream. In local POMDPs, many failures are defined by action sequence—left/right oscillation, repeated forward/backtracking, or leaving an interaction cell—so recent actions provide a direct cue for loop phase and interaction history. In the packaged Task-1 controlled reference, the Action-Memory CNN improves success over the plain CNN baseline (57.8% vs. 37.8%). Earlier development runs with recurrent visual memory were also less stable, but the GRU rows remain deliberately unreported until they complete the same controlled protocol. We therefore treat action history as a strong compact memory prior rather than claiming that more visual recurrence is universally better.
+**Action memory.** TFP encodes a short history of executed actions separately from visual features. For local POMDPs, many failures are defined by behavior sequence rather than appearance: left/right oscillation, repeated backtracking, missed interaction timing, or repeated waiting. A compact action history therefore supplies loop phase and recent control context directly, without requiring a recurrent network to reconstruct those signals from image features. In the packaged Local Transport reference, the Action-Memory CNN improves controlled success over the plain CNN baseline while remaining much smaller than a general recurrent visual policy.
 
-**Tabu and TabuX.** Tabu controllers operate at inference time and detect short repeated behavior patterns without retraining the neural policy. Basic Tabu suppresses recently repeated action cycles; TabuX extends this idea to local state-action basins so the agent can escape persistent deadlocks while preserving the learned policy elsewhere. This separation is useful experimentally: neural learning quality and deployment-time anti-deadlock control can be measured independently. The controller is intentionally lightweight and can be enabled as an ablation without changing PPO optimization.
+**Tabu / TabuX.** Tabu controllers are inference-time anti-deadlock mechanisms. Basic Tabu detects short repeated action cycles and suppresses the action that would continue them. TabuX extends this to repeated local state-action basins, allowing the agent to escape persistent corner, corridor, or pickup-area loops. Because the controller operates after neural inference and is disabled during PPO rollout collection, learning quality and deployment-time cycle handling can be evaluated separately.
 
-**Training strategy.** Training uses compact PPO with task-owned model plugins and deterministic experiment presets. Curriculum settings progressively unlock map-size groups; the five-tier room task therefore advances Small → Medium → Large → Large+ → Large++ rather than exposing all large layouts at once. Evaluation is isolated from training and always uses fixed test maps and seed matrices. Full benchmark runs, smoke integration tests, and custom ablations are explicitly separated in reporting. Recurrent rollouts preserve the exact hidden/action-history context used during data collection so PPO updates do not silently train on a different memory state than the acting policy.
+**Reward design.** Task-owned rewards make assumptions explicit. Dense rewards use symmetric geodesic or actionable progress so reversing a move does not produce net positive shaping. Interaction-aware variants penalize ignored pickup/delivery opportunities. Multi-Room Door Transport prices closed-door traversal as an additional action rather than paying a direct door bonus. Moving Cargo & Predator Avoidance combines dynamic interception potential with near-field safety shaping and terminal collision cost.
 
-**Reward design.** TFP provides sparse, dense, cycle-safe, and interaction-aware rewards as task-scoped plugins. Dense rewards use geodesic progress to make early learning practical; cycle-safe variants use symmetric progress/regression terms so a two-step oscillation cannot accumulate positive shaping reward. Under `valid` masks, interaction-aware rewards add an opportunity cost when the agent stands on a valid pickup/delivery state but ignores the interaction. `FOX-RM-L3` V5 uses a stricter **actionable geodesic**: a closed-door crossing costs `TOGGLE + MOVE`, so opening a useful door is rewarded only because it decreases executable path cost; opening an irrelevant door has no standalone bonus. This makes reward assumptions explicit and prevents the door open/close loop present in the earlier formulation.
+**Structured residual priors.** The larger room and moving-target tasks use low-bandwidth navigation cues as fixed action-logit priors while PPO learns residual corrections. This shifts learning capacity away from rediscovering basic shortest-route or interception geometry and toward interaction, timing, obstacle handling, hazard response, and memory. The policy does not receive a global map, complete path, or oracle action sequence.
 
-**Residual route prior.** The V5 room models add a fixed action-logit prior computed only from the observable two-value shortest-route doorway waypoint and adjacent-door cue. PPO learns a residual correction on top of that prior. This hybrid inductive bias is intentionally stronger than a generic CNN because the research question is shifted from rediscovering low-level shortest-path geometry to evaluating transport decisions, door interaction, action memory, and recurrent room-state memory. No global map, room graph, full route, or oracle action is passed to the network.
+**GoBI-style exploration.** `GoBI Compact` combines episodic novelty with a small latent reachability model. It evaluates whether limited model-based imagination can improve local exploration while remaining practical for resource-constrained agents. The imagination budget is deliberately small so the intrinsic module stays an ablation component rather than becoming the dominant world model.
 
-**GoBI-style exploration.** `GoBI Compact` is a resource-aware intrinsic module that combines lifelong count novelty with episodic reachability expansion estimated by a very small latent dynamics model. From the current latent state it imagines a limited set of short action branches, rewarding states that expand the episode's reachable signature set. The imagination budget is intentionally tiny, making the method suitable for testing whether model-based novelty can improve local exploration without turning TFP into a large world-model training project.
-
-**Bootstrap recurrent training.** `PPO-GRU Bootstrap` initializes its visual encoder and actor/value heads from a mature feed-forward CNN checkpoint. The new recurrent residual starts near zero, the transferred visual policy is briefly protected, and memory contribution is smoothly ramped during early fine-tuning. This avoids the destructive transition observed when a random recurrent branch is switched on inside an already learned policy. Bootstrap is therefore treated as a controlled optimization strategy for adding temporal capacity rather than as a separate source of privileged information.
+**Bootstrap recurrent training.** `PPO-GRU Bootstrap` initializes a recurrent policy from a mature feed-forward encoder and actor/value heads. The recurrent residual is introduced gradually before full fine-tuning. This reduces destructive optimization when temporal capacity is added to an already useful visual policy and provides a controlled baseline for recurrent-memory studies.
 
 ## Task-scoped architecture
 
 ```text
 tfp/tasks/<task>/
 ├── maps/train + maps/test
-├── models/              # model plugins used only by this task
-├── rewards/             # reward plugins used only by this task
-└── environment.py       # optional task-owned environment
+├── models/
+├── rewards/
+└── environment.py
 
-experiments/<TASK-CODE>/ # reproducible experiment presets
-results/<TASK-CODE>/     # evaluation records + controlled benchmark report
-checkpoints/<TASK-CODE>/ # local model weights (ignored by Git)
-videos/                  # local evaluation videos (ignored by Git)
+experiments/<TASK-CODE>/
+results/<TASK-CODE>/
+checkpoints/<TASK-CODE>/
+videos/<TASK-CODE>/
 ```
 
-The core trainer and evaluator instantiate environments through the task registry. Adding a new task does not require hard-coding it into PPO.
+The trainer and evaluator instantiate environments through the task registry, so new tasks do not require task-specific PPO code.
 
 ## TFP Studio
 
@@ -120,16 +145,10 @@ The core trainer and evaluator instantiate environments through the task registr
 python tfp_studio.py
 ```
 
-Select **Task → Model → Reward → 5×5/7×7 view → mask protocol**, then train or evaluate. The **Compare** tab has its own Task selector and can show either all stored records or only controlled benchmark runs, preventing measurements from different tasks from being mixed accidentally.
+Select **Task → Model → Reward → view size → action mask**, then train or evaluate. **Compare** can filter records by task and benchmark scope. Experiment presets are stored under `experiments/<TASK-CODE>/`.
 
-For reproducible comparisons, vary one intended factor at a time and keep the map × seed matrix, observation size, action mask, reward, policy, and checkpoint role fixed. Inference latency is hardware-dependent and should be interpreted together with the recorded runtime metadata.
-
-## Rebuild reports
-
-Evaluation automatically refreshes the corresponding task report. To regenerate every benchmark table and PNG from stored records:
+To rebuild result tables and summary PNGs:
 
 ```bash
 python tools/rebuild_reports.py
 ```
-
-Generated task summaries live at `results/<TASK-CODE>/README.md` and `results/<TASK-CODE>/summary.png`.

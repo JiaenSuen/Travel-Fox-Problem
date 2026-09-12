@@ -33,7 +33,7 @@ class TFPCycleSafeRewardTests(unittest.TestCase):
         self.assertAlmostEqual(pickup, 1.49, places=6)
 
     def test_none_action_mask_is_removed(self):
-        task = get_task('TFP-FoxTransport-Local')
+        task = get_task('TFP-LocalTransport')
         one_map = discover_maps(task.train_map_dir)[:1]
         env = TransportEnv(one_map, observation_mode='local', view_size=5)
         env.reset(seed=1)
@@ -41,7 +41,7 @@ class TFPCycleSafeRewardTests(unittest.TestCase):
             env.valid_action_mask('none')
 
     def test_task_and_valid_masks_have_distinct_interaction_semantics(self):
-        task = get_task('TFP-FoxTransport-Local')
+        task = get_task('TFP-LocalTransport')
         one_map = discover_maps(task.train_map_dir)[:1]
         env = TransportEnv(one_map, observation_mode='local', view_size=5)
         env.reset(seed=1)
@@ -53,7 +53,7 @@ class TFPCycleSafeRewardTests(unittest.TestCase):
         self.assertTrue(any(bool(v) for v in valid_mask[:4]))
 
     def test_global_observation_is_removed(self):
-        task = get_task('TFP-FoxTransport-Local')
+        task = get_task('TFP-LocalTransport')
         one_map = discover_maps(task.train_map_dir)[:1]
         with self.assertRaisesRegex(ValueError, 'supports local observation only'):
             TransportEnv(one_map, observation_mode='global')

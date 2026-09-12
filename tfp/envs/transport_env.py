@@ -12,7 +12,7 @@ from .base import load_ascii_map, reachable_cells
 
 
 class TransportEnv:
-    """Fox Transport · Local environment.
+    """Local Transport environment.
 
     The default observation is a 5x5 local crop. The full map remains hidden from
     the learning model, while low-bandwidth target-direction cues keep this first
@@ -28,9 +28,9 @@ class TransportEnv:
     """
 
     ACTIONS = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}
-    TASK_ID = "TFP-FoxTransport-Local"
-    TASK_CODE = "FOX-TR-L1"
-    TASK_NAME = "Fox Transport · Local"
+    TASK_ID = "TFP-LocalTransport"
+    TASK_CODE = "LOCAL-TRANSPORT"
+    TASK_NAME = "Local Transport"
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class TransportEnv:
         if observation_mode != "local":
             raise ValueError("TFP supports local observation only.")
         if view_size not in {5, 7}:
-            raise ValueError("Fox Transport supports view_size 5 or 7.")
+            raise ValueError("Local Transport supports view_size 5 or 7.")
         if not map_paths:
             raise ValueError("At least one map path is required.")
 

@@ -289,10 +289,9 @@ def benchmark_markdown(repository_root: str | Path, task_id: str) -> str:
         )
     expected_episodes = len(discover_maps(task.test_map_dir)) * len(task.default_eval_seeds)
     note = (
-        f"Controlled protocol: {len(discover_maps(task.test_map_dir))} test maps × {len(task.default_eval_seeds)} seeds "
-        f"= {expected_episodes} episodes/run, `{task.default_observation_mode}` {task.default_view_size}×{task.default_view_size}, "
-        f"`{task.default_reward}`, `{BENCHMARK_MASK}` mask, `{BENCHMARK_POLICY}`. "
-        "Only complete protocol-matched runs enter this table; repeated runs are averaged. `—` means no qualifying benchmark yet."
+        f"Evaluation: {len(discover_maps(task.test_map_dir))} test maps × {len(task.default_eval_seeds)} seeds "
+        f"= {expected_episodes} episodes/run · `{task.default_observation_mode}` {task.default_view_size}×{task.default_view_size} · "
+        f"`{task.default_reward}` · `{BENCHMARK_MASK}` mask · `{BENCHMARK_POLICY}`. `—` = pending."
     )
     return "\n".join([*header, *body, "", f"*{note}*"])
 
@@ -413,13 +412,9 @@ def build_task_report(
     lines = [
         f"# {task.code} — {task.display_name}",
         "",
-        "Controlled cross-model benchmark generated from complete evaluation records.",
-        "",
         markdown,
         "",
-        "![Controlled benchmark summary](summary.png)",
-        "",
-        "Ad-hoc, smoke, and ablation evaluations remain visible in **TFP Studio → Compare** but do not alter this table.",
+        "![Benchmark summary](summary.png)",
         "",
     ]
     readme_path.write_text("\n".join(lines), encoding="utf-8")

@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 from tfp.tasks import create_task_env, get_task
 from tfp.utils import discover_maps
 
-TASK_ID = "TFP-FoxRoomTransport-Local"
+TASK_ID = "TFP-RoomTransport"
 MOVE_FOR_DELTA = {(-1, 0): 0, (1, 0): 1, (0, -1): 2, (0, 1): 3}
 
 

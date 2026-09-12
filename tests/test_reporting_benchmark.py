@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_transport_readme_benchmark_lists_every_registered_model():
-    rows = benchmark_rows(ROOT, "TFP-FoxTransport-Local")
+    rows = benchmark_rows(ROOT, "TFP-LocalTransport")
     assert len(rows) == 10
     by_model = {row["model"]: row for row in rows}
     assert by_model["001_simple_cnn"]["episodes"] == 180
@@ -15,10 +15,10 @@ def test_transport_readme_benchmark_lists_every_registered_model():
 
 
 def test_color_sort_smoke_record_is_not_promoted_to_controlled_benchmark():
-    rows = benchmark_rows(ROOT, "TFP-FoxColorSort-Local")
+    rows = benchmark_rows(ROOT, "TFP-ColorSort")
     assert len(rows) == 3
     assert all(row["run_count"] == 0 for row in rows)
-    smoke = [r for r in collect_evaluation_runs(ROOT) if r.task_code == "FOX-CS-L2"]
+    smoke = [r for r in collect_evaluation_runs(ROOT) if r.task_code == "COLOR-SORT"]
     assert smoke
     assert not any(r.controlled_benchmark for r in smoke)
 
@@ -27,11 +27,11 @@ def test_gitignore_blocks_weights_videos_and_common_secret_files():
     text = (ROOT / ".gitignore").read_text(encoding="utf-8")
     for pattern in ("*.pt", "*.pth", "*.ckpt", "*.mp4", ".env", "*.pem", "credentials*.json"):
         assert pattern in text
-    assert "!checkpoints/FOX-TR-L1/" not in text
+    assert "!checkpoints/LOCAL-TRANSPORT/" not in text
 
 
 def test_room_transport_benchmark_has_all_registered_models():
-    rows = benchmark_rows(ROOT, "TFP-FoxRoomTransport-Local")
+    rows = benchmark_rows(ROOT, "TFP-RoomTransport")
     assert [row["model"] for row in rows] == [
         "001_route_prior_cnn",
         "002_route_prior_action_memory",

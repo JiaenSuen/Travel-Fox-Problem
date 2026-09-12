@@ -10,7 +10,7 @@
     "view_size": 5,
     "action_mask_mode": "task",
     "experiment_tag": "initial-controlled-study",
-    "checkpoint": "checkpoints/FOX-TR-L1/001_simple_cnn.pt",
+    "checkpoint": "checkpoints/LOCAL-TRANSPORT/001_simple_cnn.pt",
     "checkpoint_size_mb": 0.4705,
     "training_seed": 7,
     "model_parameters": 121807,
@@ -452,7 +452,7 @@
   },
   "records": [
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -474,7 +474,7 @@
       "mean_inference_ms": 0.19569253341463386
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -496,7 +496,7 @@
       "mean_inference_ms": 0.1618280167122066
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -518,7 +518,7 @@
       "mean_inference_ms": 0.3154695833169778
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -540,7 +540,7 @@
       "mean_inference_ms": 0.1678246749937292
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -562,7 +562,7 @@
       "mean_inference_ms": 0.16329968331471414
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -584,7 +584,7 @@
       "mean_inference_ms": 0.16295638333758689
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -606,7 +606,7 @@
       "mean_inference_ms": 0.15947064165781435
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -628,7 +628,7 @@
       "mean_inference_ms": 0.1732227082963315
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -650,7 +650,7 @@
       "mean_inference_ms": 0.3764785916852513
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -672,7 +672,7 @@
       "mean_inference_ms": 0.19848308333318224
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -694,7 +694,7 @@
       "mean_inference_ms": 0.19810800012447333
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -716,7 +716,7 @@
       "mean_inference_ms": 0.21135492306711967
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -738,7 +738,7 @@
       "mean_inference_ms": 0.2619348845375778
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -760,7 +760,7 @@
       "mean_inference_ms": 0.1982272306822079
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -782,7 +782,7 @@
       "mean_inference_ms": 0.1799943166436909
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -804,7 +804,7 @@
       "mean_inference_ms": 0.16365376926002612
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -826,7 +826,7 @@
       "mean_inference_ms": 0.16363919229871288
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -848,7 +848,7 @@
       "mean_inference_ms": 0.16597096156636745
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -870,7 +870,7 @@
       "mean_inference_ms": 0.17191396655107383
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -892,7 +892,7 @@
       "mean_inference_ms": 0.1652708111022447
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -914,7 +914,7 @@
       "mean_inference_ms": 0.25677170836691704
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -936,7 +936,7 @@
       "mean_inference_ms": 0.2654684083002697
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -958,7 +958,7 @@
       "mean_inference_ms": 0.25982212920325765
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -980,7 +980,7 @@
       "mean_inference_ms": 0.16279666665847495
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1002,7 +1002,7 @@
       "mean_inference_ms": 0.3299958999946284
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1024,7 +1024,7 @@
       "mean_inference_ms": 0.2852011541979967
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1046,7 +1046,7 @@
       "mean_inference_ms": 0.2967953124993983
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1068,7 +1068,7 @@
       "mean_inference_ms": 0.2582495125163102
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1090,7 +1090,7 @@
       "mean_inference_ms": 0.1838332083290576
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1112,7 +1112,7 @@
       "mean_inference_ms": 0.2930671916601568
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1134,7 +1134,7 @@
       "mean_inference_ms": 0.40446488335419417
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1156,7 +1156,7 @@
       "mean_inference_ms": 0.20581598334956652
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1178,7 +1178,7 @@
       "mean_inference_ms": 0.43005696666872
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1200,7 +1200,7 @@
       "mean_inference_ms": 0.187685116695017
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1222,7 +1222,7 @@
       "mean_inference_ms": 0.17633925003792683
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1244,7 +1244,7 @@
       "mean_inference_ms": 0.1836953249570191
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1266,7 +1266,7 @@
       "mean_inference_ms": 0.19269764999686836
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1288,7 +1288,7 @@
       "mean_inference_ms": 0.40862318332225794
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1310,7 +1310,7 @@
       "mean_inference_ms": 0.1948608000399569
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1332,7 +1332,7 @@
       "mean_inference_ms": 0.19469998333079275
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1354,7 +1354,7 @@
       "mean_inference_ms": 0.21129723073989645
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1376,7 +1376,7 @@
       "mean_inference_ms": 0.9083901923077065
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1398,7 +1398,7 @@
       "mean_inference_ms": 0.19357374999344756
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1420,7 +1420,7 @@
       "mean_inference_ms": 0.17805815384865406
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1442,7 +1442,7 @@
       "mean_inference_ms": 0.20312619230585718
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1464,7 +1464,7 @@
       "mean_inference_ms": 1.226865769275229
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1486,7 +1486,7 @@
       "mean_inference_ms": 0.18563484606532327
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1508,7 +1508,7 @@
       "mean_inference_ms": 0.17650546141549756
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1530,7 +1530,7 @@
       "mean_inference_ms": 0.20464407144312904
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1552,7 +1552,7 @@
       "mean_inference_ms": 0.3475424833292588
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1574,7 +1574,7 @@
       "mean_inference_ms": 0.19767473332497806
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1596,7 +1596,7 @@
       "mean_inference_ms": 0.8290708055180099
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1618,7 +1618,7 @@
       "mean_inference_ms": 0.1942714582772472
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1640,7 +1640,7 @@
       "mean_inference_ms": 0.28458922500552336
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1662,7 +1662,7 @@
       "mean_inference_ms": 0.19269383328719414
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1684,7 +1684,7 @@
       "mean_inference_ms": 0.19719211104529677
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1706,7 +1706,7 @@
       "mean_inference_ms": 0.21321802776381243
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1728,7 +1728,7 @@
       "mean_inference_ms": 0.30707608319365437
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1750,7 +1750,7 @@
       "mean_inference_ms": 0.19662923336909444
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1772,7 +1772,7 @@
       "mean_inference_ms": 0.27027537499861864
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1794,7 +1794,7 @@
       "mean_inference_ms": 0.20982918749723467
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1816,7 +1816,7 @@
       "mean_inference_ms": 0.18723500005535243
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1838,7 +1838,7 @@
       "mean_inference_ms": 0.21065925000129937
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1860,7 +1860,7 @@
       "mean_inference_ms": 0.18779525004219977
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1882,7 +1882,7 @@
       "mean_inference_ms": 0.1794272498045757
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1904,7 +1904,7 @@
       "mean_inference_ms": 1.6196173124285451
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1926,7 +1926,7 @@
       "mean_inference_ms": 0.17655000004879184
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1948,7 +1948,7 @@
       "mean_inference_ms": 0.19026093735874383
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1970,7 +1970,7 @@
       "mean_inference_ms": 0.18782462495892105
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -1992,7 +1992,7 @@
       "mean_inference_ms": 0.20791331240843647
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2014,7 +2014,7 @@
       "mean_inference_ms": 0.17960965403919824
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2036,7 +2036,7 @@
       "mean_inference_ms": 0.19189499996103293
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2058,7 +2058,7 @@
       "mean_inference_ms": 0.3361389499483873
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2080,7 +2080,7 @@
       "mean_inference_ms": 0.2276410768200339
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2102,7 +2102,7 @@
       "mean_inference_ms": 0.19849119235004764
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2124,7 +2124,7 @@
       "mean_inference_ms": 0.1932725110944173
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2146,7 +2146,7 @@
       "mean_inference_ms": 1.058740807680946
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2168,7 +2168,7 @@
       "mean_inference_ms": 0.215139616668441
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2190,7 +2190,7 @@
       "mean_inference_ms": 0.30893810004878713
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2212,7 +2212,7 @@
       "mean_inference_ms": 0.38489856665869915
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2234,7 +2234,7 @@
       "mean_inference_ms": 0.2148278055705709
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2256,7 +2256,7 @@
       "mean_inference_ms": 0.28057754161636694
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2278,7 +2278,7 @@
       "mean_inference_ms": 0.18041878748438953
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2300,7 +2300,7 @@
       "mean_inference_ms": 0.8577092499864294
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2322,7 +2322,7 @@
       "mean_inference_ms": 0.1769220556424342
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2344,7 +2344,7 @@
       "mean_inference_ms": 0.1846670277245721
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2366,7 +2366,7 @@
       "mean_inference_ms": 0.17569752636566255
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2388,7 +2388,7 @@
       "mean_inference_ms": 0.17993597228067099
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2410,7 +2410,7 @@
       "mean_inference_ms": 0.2738873583439272
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2432,7 +2432,7 @@
       "mean_inference_ms": 0.2896172625014515
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2454,7 +2454,7 @@
       "mean_inference_ms": 0.2002309000090463
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2476,7 +2476,7 @@
       "mean_inference_ms": 0.19264362504145538
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2498,7 +2498,7 @@
       "mean_inference_ms": 0.18672191662669016
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2520,7 +2520,7 @@
       "mean_inference_ms": 0.18259450002410127
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2542,7 +2542,7 @@
       "mean_inference_ms": 0.17550137494026785
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2564,7 +2564,7 @@
       "mean_inference_ms": 0.2371542499872703
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2586,7 +2586,7 @@
       "mean_inference_ms": 0.18536237502075892
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2608,7 +2608,7 @@
       "mean_inference_ms": 1.622233250145655
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2630,7 +2630,7 @@
       "mean_inference_ms": 0.1800543749368444
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2652,7 +2652,7 @@
       "mean_inference_ms": 0.1988086750391934
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2674,7 +2674,7 @@
       "mean_inference_ms": 0.3083863444114993
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2696,7 +2696,7 @@
       "mean_inference_ms": 0.18789669222594688
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2718,7 +2718,7 @@
       "mean_inference_ms": 0.19348990557167176
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2740,7 +2740,7 @@
       "mean_inference_ms": 0.3191923000031238
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2762,7 +2762,7 @@
       "mean_inference_ms": 0.3108149222144776
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2784,7 +2784,7 @@
       "mean_inference_ms": 0.18055331664881022
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2806,7 +2806,7 @@
       "mean_inference_ms": 0.1746970384164552
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2828,7 +2828,7 @@
       "mean_inference_ms": 0.18048885550949004
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2850,7 +2850,7 @@
       "mean_inference_ms": 0.1850487444496846
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2872,7 +2872,7 @@
       "mean_inference_ms": 0.3203036221849389
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2894,7 +2894,7 @@
       "mean_inference_ms": 0.28495220831625073
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2916,7 +2916,7 @@
       "mean_inference_ms": 0.17973813876576766
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2938,7 +2938,7 @@
       "mean_inference_ms": 0.1825840708041445
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2960,7 +2960,7 @@
       "mean_inference_ms": 0.18142902498539115
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -2982,7 +2982,7 @@
       "mean_inference_ms": 0.27345393749177066
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3004,7 +3004,7 @@
       "mean_inference_ms": 0.5432238916948032
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3026,7 +3026,7 @@
       "mean_inference_ms": 0.18664334584173048
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3048,7 +3048,7 @@
       "mean_inference_ms": 0.17706256669119588
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3070,7 +3070,7 @@
       "mean_inference_ms": 0.18368174169154372
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3092,7 +3092,7 @@
       "mean_inference_ms": 0.2904321791068772
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3114,7 +3114,7 @@
       "mean_inference_ms": 0.18926830835728956
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3136,7 +3136,7 @@
       "mean_inference_ms": 0.3739571250055936
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3158,7 +3158,7 @@
       "mean_inference_ms": 0.1764045999834707
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3180,7 +3180,7 @@
       "mean_inference_ms": 0.17940599999140736
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3202,7 +3202,7 @@
       "mean_inference_ms": 0.18617618333488886
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3224,7 +3224,7 @@
       "mean_inference_ms": 0.18500732505799533
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3246,7 +3246,7 @@
       "mean_inference_ms": 0.37281600003401155
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3268,7 +3268,7 @@
       "mean_inference_ms": 0.1798468166574215
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3290,7 +3290,7 @@
       "mean_inference_ms": 0.1811909916341392
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3312,7 +3312,7 @@
       "mean_inference_ms": 0.17708110003695765
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3334,7 +3334,7 @@
       "mean_inference_ms": 0.31507903888976013
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3356,7 +3356,7 @@
       "mean_inference_ms": 0.3095377055665772
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3378,7 +3378,7 @@
       "mean_inference_ms": 0.18109463884078045
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3400,7 +3400,7 @@
       "mean_inference_ms": 0.3226662055415848
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3422,7 +3422,7 @@
       "mean_inference_ms": 0.19295560558829392
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3444,7 +3444,7 @@
       "mean_inference_ms": 0.3335076444525637
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3466,7 +3466,7 @@
       "mean_inference_ms": 0.32720993892022915
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3488,7 +3488,7 @@
       "mean_inference_ms": 0.21926135555077053
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3510,7 +3510,7 @@
       "mean_inference_ms": 0.3118427611045465
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3532,7 +3532,7 @@
       "mean_inference_ms": 0.31301619448337686
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3554,7 +3554,7 @@
       "mean_inference_ms": 0.19013029577384563
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3576,7 +3576,7 @@
       "mean_inference_ms": 0.2887748833434974
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3598,7 +3598,7 @@
       "mean_inference_ms": 0.2988353666561731
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3620,7 +3620,7 @@
       "mean_inference_ms": 0.19933227501193565
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3642,7 +3642,7 @@
       "mean_inference_ms": 0.28581612500981163
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3664,7 +3664,7 @@
       "mean_inference_ms": 0.1755649416319708
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3686,7 +3686,7 @@
       "mean_inference_ms": 0.18481094166797143
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3708,7 +3708,7 @@
       "mean_inference_ms": 0.31631427502816223
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3730,7 +3730,7 @@
       "mean_inference_ms": 0.21335694166661293
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3752,7 +3752,7 @@
       "mean_inference_ms": 0.3066542874989864
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3774,7 +3774,7 @@
       "mean_inference_ms": 0.19369275014469167
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3796,7 +3796,7 @@
       "mean_inference_ms": 0.17673768746817586
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3818,7 +3818,7 @@
       "mean_inference_ms": 0.18256803331648067
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3840,7 +3840,7 @@
       "mean_inference_ms": 1.6136274374503046
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3862,7 +3862,7 @@
       "mean_inference_ms": 0.19529781252458633
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3884,7 +3884,7 @@
       "mean_inference_ms": 0.21880256241502138
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3906,7 +3906,7 @@
       "mean_inference_ms": 0.1801434374328892
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3928,7 +3928,7 @@
       "mean_inference_ms": 0.1802335000320454
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3950,7 +3950,7 @@
       "mean_inference_ms": 0.19340231261821828
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3972,7 +3972,7 @@
       "mean_inference_ms": 0.31634287500992286
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -3994,7 +3994,7 @@
       "mean_inference_ms": 0.3158057222309354
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4016,7 +4016,7 @@
       "mean_inference_ms": 0.1897244722082784
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4038,7 +4038,7 @@
       "mean_inference_ms": 0.34740781661134357
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4060,7 +4060,7 @@
       "mean_inference_ms": 0.19262557219816598
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4082,7 +4082,7 @@
       "mean_inference_ms": 0.3356187444650358
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4104,7 +4104,7 @@
       "mean_inference_ms": 0.3083706055501049
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4126,7 +4126,7 @@
       "mean_inference_ms": 0.18446264446336297
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4148,7 +4148,7 @@
       "mean_inference_ms": 0.3081618499891192
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4170,7 +4170,7 @@
       "mean_inference_ms": 0.1840635889038822
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4192,7 +4192,7 @@
       "mean_inference_ms": 0.18112619237889213
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4214,7 +4214,7 @@
       "mean_inference_ms": 0.2757566958393909
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4236,7 +4236,7 @@
       "mean_inference_ms": 0.1928845277032249
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4258,7 +4258,7 @@
       "mean_inference_ms": 0.29231129581148707
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4280,7 +4280,7 @@
       "mean_inference_ms": 0.29693907498161326
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4302,7 +4302,7 @@
       "mean_inference_ms": 0.18811058331872724
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4324,7 +4324,7 @@
       "mean_inference_ms": 0.1803779722043449
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4346,7 +4346,7 @@
       "mean_inference_ms": 0.2436864999455995
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4368,7 +4368,7 @@
       "mean_inference_ms": 0.7244052893551461
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",
@@ -4390,7 +4390,7 @@
       "mean_inference_ms": 0.1957014791249397
     },
     {
-      "task_id": "TFP-FoxTransport-Local",
+      "task_id": "TFP-LocalTransport",
       "model": "001_simple_cnn",
       "policy": "001_ppo_categorical",
       "reward": "001_dense_transport",

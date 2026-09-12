@@ -6,7 +6,7 @@ from tfp.rewards import load_reward_plugin
 
 
 def _env() -> TransportEnv:
-    maps = sorted((Path('tfp/tasks/fox_transport_local/maps/train')).glob('*.txt'))
+    maps = sorted((Path('tfp/tasks/local_transport/maps/train')).glob('*.txt'))
     assert maps
     return TransportEnv(maps[:1], reward_module='003_valid_interaction_transport')
 
