@@ -1,0 +1,22 @@
+{
+  "task": "KEYED-HAZARD-LOGISTICS",
+  "model": "003_dual_timescale_gru_shield",
+  "algorithm": "ppo",
+  "reward": "001_dependency_risk_potential",
+  "mask_mode": "task",
+  "view_size": 7,
+  "total_timesteps": 720000,
+  "num_envs": 8,
+  "rollout_steps": 256,
+  "learning_rate": 0.00012,
+  "gamma": 0.999,
+  "gae_lambda": 0.97,
+  "clip_coef": 0.16,
+  "entropy_coef": 0.003,
+  "value_coef": 0.5,
+  "max_grad_norm": 0.5,
+  "update_epochs": 4,
+  "minibatch_size": 512,
+  "sequence_length": 32,
+  "experiment_tag": "dual_timescale_access_hazard"
+}

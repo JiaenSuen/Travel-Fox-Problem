@@ -1,0 +1,21 @@
+{
+  "task": "KEYED-HAZARD-LOGISTICS",
+  "model": "002_event_memory_transformer",
+  "algorithm": "ppo",
+  "reward": "001_dependency_risk_potential",
+  "mask_mode": "task",
+  "view_size": 7,
+  "total_timesteps": 600000,
+  "num_envs": 8,
+  "rollout_steps": 256,
+  "learning_rate": 0.00014,
+  "gamma": 0.998,
+  "gae_lambda": 0.97,
+  "clip_coef": 0.17,
+  "entropy_coef": 0.0035,
+  "value_coef": 0.5,
+  "max_grad_norm": 0.5,
+  "update_epochs": 4,
+  "minibatch_size": 512,
+  "experiment_tag": "event_memory_access_logistics"
+}

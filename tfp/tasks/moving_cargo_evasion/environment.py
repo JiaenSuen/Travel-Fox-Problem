@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from pathlib import Path
+import json
 from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
@@ -20,11 +21,12 @@ class MovingCargoEvasionEnv:
     A white wolf follows a seeded random-waypoint roaming process over traversable cells.
     Contact with the wolf terminates the episode as failure.
 
-    Observation channels (18 x V x V):
-      0 wall/outside; 1 track; 2 cargo carrier; 3 goal; 4 white wolf; 5 agent;
+    Observation channels (24 x V x V):
+      0 wall/outside; 1 track network; 2 cargo carrier; 3 goal; 4 white wolf; 5 agent;
       6 carrying; 7/8 route waypoint row/column offset; 9/10 carrier velocity;
-      11/12 wolf bearing; 13 wolf proximity; 14 pickup available;
-      15 delivery available; 16 normalized intercept ETA; 17 carrier phase.
+      11/12 wolf bearing; 13 wolf proximity; 14 pickup available; 15 delivery available;
+      16 normalized intercept ETA; 17 carrier cadence phase; 18/19 predicted carrier offset;
+      20/21 observed wolf velocity; 22 interception slack; 23 upcoming carrier-turn proximity.
 
     The route waypoint is a two-value navigation cue computed from the earliest feasible
     interception point before pickup and from the delivery goal afterwards. It exposes
@@ -46,7 +48,7 @@ class MovingCargoEvasionEnv:
         view_size: int = 7,
         max_steps: Optional[int] = None,
         seed: int = 0,
-        reward_module: str = "001_intercept_safety_potential",
+        reward_module: str = "001_counterfactual_intercept_risk",
     ) -> None:
         if observation_mode != "local":
             raise ValueError("TFP supports local observation only.")
@@ -66,7 +68,7 @@ class MovingCargoEvasionEnv:
         self.reward_function = reward_factory()
 
         self.action_space_n = 7
-        self.observation_shape = (18, self.view_size, self.view_size)
+        self.observation_shape = (24, self.view_size, self.view_size)
         self.capacity = 1
 
         self.grid: np.ndarray
@@ -75,6 +77,10 @@ class MovingCargoEvasionEnv:
         self.goal_pos: Pos
         self.track_cells: list[Pos] = []
         self.track_set: set[Pos] = set()
+        self.route_family = "legacy_cycle"
+        self.structure_family = "unknown"
+        self.route_metrics: dict[str, int] = {}
+        self.vehicle_cadence = self.VEHICLE_CADENCE
         self._track_distance_fields: list[np.ndarray] = []
         self._goal_distance_field: np.ndarray | None = None
         self.vehicle_index = 0
@@ -84,6 +90,7 @@ class MovingCargoEvasionEnv:
         self.cargo_on_vehicle = True
         self.carrying = False
         self.wolf_pos: Pos = (0, 0)
+        self.wolf_prev_pos: Pos = (0, 0)
         self.wolf_heading = 0
         self.wolf_target: Pos = (0, 0)
         self._wolf_target_field: np.ndarray | None = None
@@ -153,13 +160,49 @@ class MovingCargoEvasionEnv:
             raise ValueError("Track contains disconnected components.")
         return ordered
 
+
+    def _load_route_program(self, path: Path, track: set[Pos]) -> list[Pos]:
+        """Load an explicit cyclic carrier route when a sidecar is packaged.
+
+        V7 separates the visible rail *network* from the route program. This permits
+        crossings, shared junctions, nested loops and repeated junction visits while
+        keeping carrier motion deterministic and reproducible. Legacy maps without a
+        sidecar retain the original branch-free-cycle parser.
+        """
+        sidecar = path.with_suffix(".route.json")
+        if not sidecar.exists():
+            self.route_family = "legacy_cycle"
+            self.structure_family = "unknown"
+            self.route_metrics = {}
+            self.vehicle_cadence = self.VEHICLE_CADENCE
+            return self._order_track(track)
+
+        payload = json.loads(sidecar.read_text(encoding="utf-8"))
+        route = [tuple(map(int, p)) for p in payload.get("route", [])]
+        if len(route) < 8:
+            raise ValueError(f"Route sidecar requires at least 8 route states: {sidecar}")
+        for i, cell in enumerate(route):
+            if cell not in track:
+                raise ValueError(f"Route cell {cell} is not marked T in {path}")
+            nxt = route[(i + 1) % len(route)]
+            if self._manhattan(cell, nxt) != 1:
+                raise ValueError(f"Route must move one four-neighbor cell per carrier move: {cell} -> {nxt}")
+        self.route_family = str(payload.get("route_family", "explicit"))
+        self.structure_family = str(payload.get("structure_family", "unknown"))
+        self.vehicle_cadence = max(1, int(payload.get("vehicle_cadence", self.VEHICLE_CADENCE)))
+        self.route_metrics = {
+            key: int(payload.get(key, 0))
+            for key in ("route_length", "turns", "repeated_route_nodes", "junction_cells")
+        }
+        return route
+
     def reset(self, seed: Optional[int] = None, map_path: Optional[str | Path] = None):
         if seed is not None:
             self.rng = np.random.default_rng(seed)
         self.current_map = Path(map_path) if map_path is not None else self.map_paths[int(self.rng.integers(0, len(self.map_paths)))]
         self.grid, self.start_pos, self.goal_pos, raw_track = self._parse_map(self.current_map)
-        self.track_cells = self._order_track(raw_track)
-        self.track_set = set(self.track_cells)
+        self.track_set = set(raw_track)
+        self.track_cells = self._load_route_program(self.current_map, raw_track)
         self._track_distance_fields = [self._distance_field(p) for p in self.track_cells]
         self._goal_distance_field = self._distance_field(self.goal_pos)
 
@@ -174,11 +217,11 @@ class MovingCargoEvasionEnv:
         self.last_reward = 0.0
         self.last_event = "reset"
         self.failure_reason = ""
-        self.max_steps = self._configured_max_steps or max(180, 8 * (self.grid.shape[0] + self.grid.shape[1]))
+        self.max_steps = self._configured_max_steps or max(220, min(520, 6 * (self.grid.shape[0] + self.grid.shape[1]) + 2 * len(self.track_cells)))
 
         self.vehicle_index = int(self.rng.integers(0, len(self.track_cells)))
         self.vehicle_direction = 1 if int(self.rng.integers(0, 2)) == 0 else -1
-        self.vehicle_clock = int(self.rng.integers(0, self.VEHICLE_CADENCE))
+        self.vehicle_clock = int(self.rng.integers(0, self.vehicle_cadence))
         self.vehicle_moves = 0
 
         reachable = [p for p in self._reachable_cells(self.start_pos) if p not in {self.start_pos, self.goal_pos, self.vehicle_pos}]
@@ -187,6 +230,7 @@ class MovingCargoEvasionEnv:
         if not wolf_candidates:
             raise ValueError(f"No valid wolf spawn cells in {self.current_map}")
         self.wolf_pos = wolf_candidates[int(self.rng.integers(0, len(wolf_candidates)))]
+        self.wolf_prev_pos = self.wolf_pos
         self.wolf_heading = int(self.rng.integers(0, 4))
         self._choose_wolf_target()
 
@@ -208,6 +252,16 @@ class MovingCargoEvasionEnv:
         delivery_available_before = bool(self.carrying and self.agent_pos == self.goal_pos)
         nav_before = self._navigation_cost(self.agent_pos)
         wolf_before = self._manhattan(self.agent_pos, self.wolf_pos)
+        risk_before = self._risk_cost(self.agent_pos)
+        # Counterfactual local safety baseline: how safe could this step have been
+        # under the same exogenous wolf state? This measures avoidable risk rather
+        # than rewarding passive wolf motion. WAIT/current cell is included.
+        safe_candidates = [self.agent_pos]
+        for dr, dc in self.ACTIONS.values():
+            p = (self.agent_pos[0] + dr, self.agent_pos[1] + dc)
+            if self._is_free(p) and p != self.wolf_pos:
+                safe_candidates.append(p)
+        best_local_risk = min(self._risk_cost(p) for p in safe_candidates)
 
         if action in self.ACTIONS:
             dr, dc = self.ACTIONS[action]
@@ -256,9 +310,11 @@ class MovingCargoEvasionEnv:
         nav_after_action = self._navigation_cost(self.agent_pos)
         navigation_delta = 0 if pickup or delivered else int(nav_before - nav_after_action)
         wolf_after_action = self._manhattan(self.agent_pos, self.wolf_pos)
-        safety_delta = 0
-        if wolf_before <= 4 and not wolf_collision:
-            safety_delta = int(np.clip(wolf_after_action - wolf_before, -1, 1))
+        risk_after_action = self._risk_cost(self.agent_pos)
+        safety_delta = float(risk_before - risk_after_action) if not wolf_collision else 0.0
+        safety_regret = 0.0 if (pickup or delivered or wolf_collision) else max(0.0, float(risk_after_action - best_local_risk))
+        intercept_eta_before = int(nav_before) if (not self.carrying and self.cargo_on_vehicle) else 0
+        well_timed_wait = bool(waited and (not self.carrying) and intercept_eta_before <= max(2, self.vehicle_cadence + 1))
 
         if not terminated:
             self._advance_vehicle()
@@ -283,7 +339,9 @@ class MovingCargoEvasionEnv:
             "delivered": delivered,
             "navigation_delta": navigation_delta,
             "safety_delta": safety_delta,
+            "safety_regret": safety_regret,
             "wolf_distance": wolf_distance,
+            "well_timed_wait": well_timed_wait,
             "pickup_available_before": pickup_available_before,
             "delivery_available_before": delivery_available_before,
             "missed_pickup": bool(pickup_available_before and action != 4),
@@ -301,7 +359,7 @@ class MovingCargoEvasionEnv:
 
     def _advance_vehicle(self) -> None:
         self.vehicle_clock += 1
-        if self.vehicle_clock >= self.VEHICLE_CADENCE:
+        if self.vehicle_clock >= self.vehicle_cadence:
             self.vehicle_clock = 0
             self.vehicle_index = (self.vehicle_index + self.vehicle_direction) % len(self.track_cells)
             self.vehicle_moves += 1
@@ -315,6 +373,7 @@ class MovingCargoEvasionEnv:
         self.wolf_target_ttl = int(self.rng.integers(8, 18))
 
     def _advance_wolf(self) -> None:
+        self.wolf_prev_pos = self.wolf_pos
         # Random-waypoint roaming covers the complete map more reliably than an
         # unconstrained random walk while remaining non-adversarial and seed-reproducible.
         if self.wolf_target_ttl <= 0 or self.wolf_pos == self.wolf_target or self._wolf_target_field is None:
@@ -340,11 +399,11 @@ class MovingCargoEvasionEnv:
         self.wolf_pos = nxt
 
     def _future_vehicle_index(self, t: int) -> int:
-        moves = (self.vehicle_clock + max(0, int(t))) // self.VEHICLE_CADENCE
+        moves = (self.vehicle_clock + max(0, int(t))) // self.vehicle_cadence
         return (self.vehicle_index + self.vehicle_direction * moves) % len(self.track_cells)
 
     def _best_intercept(self, pos: Pos) -> tuple[int, Pos, int]:
-        horizon = min(self.max_steps, max(24, len(self.track_cells) * self.VEHICLE_CADENCE + 8))
+        horizon = min(self.max_steps, max(24, len(self.track_cells) * self.vehicle_cadence + 8))
         best: tuple[int, Pos, int] | None = None
         for t in range(horizon + 1):
             idx = self._future_vehicle_index(t)
@@ -387,6 +446,41 @@ class MovingCargoEvasionEnv:
         best_distance = min(int(field[p]) for p in options)
         shortest = [p for p in options if int(field[p]) == best_distance]
         return max(shortest, key=lambda p: self._manhattan(p, self.wolf_pos))
+
+    def _predicted_wolf_pos(self) -> Pos:
+        dr, dc = self.ACTIONS.get(int(self.wolf_heading), (0, 0))
+        nxt = (self.wolf_pos[0] + dr, self.wolf_pos[1] + dc)
+        return nxt if self._is_free(nxt) else self.wolf_pos
+
+    def _risk_cost(self, pos: Pos) -> float:
+        """Low-bandwidth local hazard potential used for symmetric safety shaping."""
+        current = self._manhattan(pos, self.wolf_pos)
+        predicted = self._manhattan(pos, self._predicted_wolf_pos())
+        return float(max(0, 4-current) + 0.65 * max(0, 3-predicted))
+
+    def _intercept_slack(self, pos: Pos) -> int:
+        if self.carrying or not self.cargo_on_vehicle:
+            return 0
+        eta, _, idx = self._best_intercept(pos)
+        distance = int(self._track_distance_fields[idx][pos])
+        return max(0, int(eta - distance))
+
+    def _turn_proximity(self, horizon: int = 8) -> float:
+        """Return inverse route-move distance to the carrier's next direction change."""
+        if len(self.track_cells) < 3:
+            return 0.0
+        direction = self.vehicle_direction
+        idx = self.vehicle_index
+        def delta(i: int) -> tuple[int, int]:
+            j = (i + direction) % len(self.track_cells)
+            a, b = self.track_cells[i], self.track_cells[j]
+            return b[0]-a[0], b[1]-a[1]
+        base = delta(idx)
+        for k in range(1, horizon + 1):
+            probe = (idx + direction * k) % len(self.track_cells)
+            if delta(probe) != base:
+                return 1.0 / float(k)
+        return 0.0
 
     def _pickup_available(self) -> bool:
         return bool((not self.carrying) and self.cargo_on_vehicle and self.agent_pos == self.vehicle_pos)
@@ -481,8 +575,17 @@ class MovingCargoEvasionEnv:
         obs[14,:,:] = 1.0 if self._pickup_available() else 0.0
         obs[15,:,:] = 1.0 if (self.carrying and self.agent_pos == self.goal_pos) else 0.0
         eta = 0 if self.carrying else self._best_intercept(self.agent_pos)[0]
-        obs[16,:,:] = min(1.0, float(eta) / 16.0)
-        obs[17,:,:] = float(self.vehicle_clock) / float(max(1, self.VEHICLE_CADENCE-1))
+        obs[16,:,:] = min(1.0, float(eta) / 24.0)
+        obs[17,:,:] = float(self.vehicle_clock) / float(max(1, self.vehicle_cadence-1))
+
+        future_idx = self._future_vehicle_index(max(4, 2 * self.vehicle_cadence))
+        fr, fc = self.track_cells[future_idx]
+        obs[18,:,:] = np.clip((fr-ar)/row_scale, -1.0, 1.0)
+        obs[19,:,:] = np.clip((fc-ac)/col_scale, -1.0, 1.0)
+        obs[20,:,:] = float(self.wolf_pos[0] - self.wolf_prev_pos[0])
+        obs[21,:,:] = float(self.wolf_pos[1] - self.wolf_prev_pos[1])
+        obs[22,:,:] = min(1.0, float(self._intercept_slack(self.agent_pos)) / 8.0)
+        obs[23,:,:] = self._turn_proximity()
         return obs
 
     def _info(self, success: bool) -> Dict[str, object]:
@@ -500,6 +603,10 @@ class MovingCargoEvasionEnv:
             "vehicle_pos": self.vehicle_pos,
             "vehicle_direction": self.vehicle_direction,
             "vehicle_clock": self.vehicle_clock,
+            "vehicle_cadence": self.vehicle_cadence,
+            "route_family": self.route_family,
+            "structure_family": self.structure_family,
+            "route_metrics": dict(self.route_metrics),
             "wolf_pos": self.wolf_pos,
             "failure_reason": self.failure_reason,
             "observation_mode": self.observation_mode,
@@ -528,6 +635,7 @@ class MovingCargoEvasionEnv:
             "Cargo": "Carrying" if self.carrying else ("On carrier" if self.cargo_on_vehicle else "Transferred"),
             "Carrier": f"{self.vehicle_pos[0]}, {self.vehicle_pos[1]}",
             "Intercept ETA": 0 if self.carrying else self._best_intercept(self.agent_pos)[0],
+            "Track": self.route_family,
             "Wolf": f"{self.wolf_pos[0]}, {self.wolf_pos[1]}",
             "Last event": self.last_event,
             "Failure": self.failure_reason or "—",

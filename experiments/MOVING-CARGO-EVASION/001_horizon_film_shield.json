@@ -1,0 +1,21 @@
+{
+  "task": "MOVING-CARGO-EVASION",
+  "model": "001_horizon_film_shield",
+  "algorithm": "ppo",
+  "reward": "001_counterfactual_intercept_risk",
+  "mask_mode": "task",
+  "view_size": 7,
+  "total_timesteps": 320000,
+  "num_envs": 8,
+  "rollout_steps": 256,
+  "learning_rate": 0.00018,
+  "gamma": 0.995,
+  "gae_lambda": 0.95,
+  "clip_coef": 0.18,
+  "entropy_coef": 0.005,
+  "value_coef": 0.5,
+  "max_grad_norm": 0.5,
+  "update_epochs": 4,
+  "minibatch_size": 512,
+  "experiment_tag": "horizon_film_counterfactual_risk"
+}

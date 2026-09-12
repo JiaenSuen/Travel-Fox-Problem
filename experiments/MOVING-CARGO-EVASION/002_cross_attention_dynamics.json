@@ -1,0 +1,21 @@
+{
+  "task": "MOVING-CARGO-EVASION",
+  "model": "002_cross_attention_dynamics",
+  "algorithm": "ppo",
+  "reward": "001_counterfactual_intercept_risk",
+  "mask_mode": "task",
+  "view_size": 7,
+  "total_timesteps": 420000,
+  "num_envs": 8,
+  "rollout_steps": 256,
+  "learning_rate": 0.00015,
+  "gamma": 0.997,
+  "gae_lambda": 0.95,
+  "clip_coef": 0.18,
+  "entropy_coef": 0.004,
+  "value_coef": 0.5,
+  "max_grad_norm": 0.5,
+  "update_epochs": 4,
+  "minibatch_size": 512,
+  "experiment_tag": "cross_attention_dynamic_interception"
+}

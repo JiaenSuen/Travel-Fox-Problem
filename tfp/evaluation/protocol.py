@@ -179,6 +179,11 @@ def evaluate_policy(
                     visualize_episode = presentation != "data" and seed == seeds[0]
                     if recorder is not None and visualize_episode:
                         recorder.start_episode(map_path.stem, seed)
+                        # Include the reset state. V6 started recording only after the
+                        # first action, which made short episodes appear clipped and
+                        # omitted one simulator state from every video.
+                        reset_frame = renderer.render(env, action_name="RESET", reward=0.0, status_open=False)
+                        recorder.append(reset_frame)
 
                     for _ in range(env.max_steps):
                         x = torch.as_tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)

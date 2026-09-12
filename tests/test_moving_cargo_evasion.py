@@ -12,16 +12,12 @@ from tfp.utils import discover_maps
 TASK_ID = "TFP-MovingCargoEvasion"
 
 
-def _env(seed: int = 109, view_size: int = 7):
+def _env(seed: int = 109, view_size: int = 7, map_name: str | None = None):
     task = get_task(TASK_ID)
     maps = discover_maps(task.test_map_dir)
-    env = create_task_env(
-        task.env_id,
-        maps,
-        view_size=view_size,
-        seed=seed,
-        reward_module=task.default_reward,
-    )
+    if map_name:
+        maps = [p for p in maps if map_name in p.name] or maps
+    env = create_task_env(task.env_id, maps, view_size=view_size, seed=seed, reward_module=task.default_reward)
     env.reset(seed=seed, map_path=maps[0])
     return env
 
@@ -35,47 +31,52 @@ def test_task_names_have_no_fox_or_order_marker():
 
 def test_moving_cargo_assets_models_reward_and_views():
     task = get_task(TASK_ID)
-    train = discover_maps(task.train_map_dir)
-    test = discover_maps(task.test_map_dir)
-    assert len(train) == 45
-    assert len(test) == 15
+    train = discover_maps(task.train_map_dir); test = discover_maps(task.test_map_dir)
+    assert len(train) == 72
+    assert len(test) == 24
     assert {tuple(map(int, p.stem.rsplit("_", 1)[-1].split("x"))) for p in train} == {
-        (12, 12), (16, 16), (20, 20)
+        (12, 12), (16, 16), (20, 20), (24, 24)
     }
     assert set(discover_model_plugins(TASK_ID)) == {
-        "001_intercept_safety_cnn",
-        "002_intercept_action_memory",
-        "003_intercept_gru_memory",
+        "001_horizon_film_shield",
+        "002_cross_attention_dynamics",
+        "003_phase_world_gru",
     }
-    assert set(discover_reward_plugins(TASK_ID)) == {"001_intercept_safety_potential"}
+    assert set(discover_reward_plugins(TASK_ID)) == {"001_counterfactual_intercept_risk"}
 
     for view_size in (5, 7):
         env = _env(view_size=view_size)
         obs = env._observation()
-        assert obs.shape == (18, view_size, view_size)
+        assert obs.shape == (24, view_size, view_size)
         assert env.action_space_n == 7
-        assert env.valid_action_mask("task")[6]  # WAIT
+        assert env.valid_action_mask("task")[6]
 
 
-def test_track_is_one_closed_branch_free_cycle():
-    env = _env()
-    track = set(env.track_cells)
-    assert len(track) >= 8
-    for r, c in track:
-        degree = sum((r + dr, c + dc) in track for dr, dc in env.ACTIONS.values())
-        assert degree == 2
-    assert len(env.track_cells) == len(track)
+def test_route_programs_are_closed_adjacent_and_include_complex_topologies():
+    task = get_task(TASK_ID)
+    families = set(); complex_count = 0
+    for map_path in discover_maps(task.test_map_dir):
+        env = create_task_env(task.env_id, [map_path], view_size=7, seed=109, reward_module=task.default_reward)
+        env.reset(seed=109, map_path=map_path)
+        families.add(env.route_family)
+        assert len(env.track_cells) >= 8
+        for i, p in enumerate(env.track_cells):
+            q = env.track_cells[(i + 1) % len(env.track_cells)]
+            assert env._manhattan(p, q) == 1
+            assert p in env.track_set
+        if env.route_metrics.get("junction_cells", 0) > 0 or env.route_metrics.get("repeated_route_nodes", 0) > 0:
+            complex_count += 1
+    assert families == {"ring", "serpentine", "figure8", "clover", "switchyard", "nested"}
+    assert complex_count >= 12
 
 
-def test_carrier_moves_with_defined_cadence():
-    env = _env()
+def test_carrier_moves_with_map_defined_cadence():
+    env = _env(map_name="24x24")
     start = env.vehicle_pos
-    # Keep the wolf out of the way so this test isolates carrier dynamics.
-    env.wolf_pos = env.goal_pos
-    env.wolf_target = env.goal_pos
-    env._wolf_target_field = env._distance_field(env.goal_pos)
+    env.wolf_pos = env.goal_pos; env.wolf_prev_pos = env.goal_pos
+    env.wolf_target = env.goal_pos; env._wolf_target_field = env._distance_field(env.goal_pos)
     env._advance_wolf = lambda: None
-    for _ in range(env.VEHICLE_CADENCE):
+    for _ in range(env.vehicle_cadence):
         env.step(6)
     assert env.vehicle_pos != start
     assert env.vehicle_moves == 1
@@ -87,49 +88,52 @@ def test_contact_with_wolf_terminates_as_failure():
     chosen = None
     for action, (dr, dc) in env.ACTIONS.items():
         pos = (ar + dr, ac + dc)
-        if env._is_free(pos):
-            chosen = (action, pos)
-            break
+        if env._is_free(pos): chosen = (action, pos); break
     assert chosen is not None
     action, pos = chosen
-    env.wolf_pos = pos
+    env.wolf_pos = pos; env.wolf_prev_pos = pos
     _, reward, terminated, truncated, info = env.step(action)
-    assert terminated and not truncated
-    assert not info["success"]
+    assert terminated and not truncated and not info["success"]
     assert info["failure_reason"] == "wolf_collision"
     assert info["hazard_collisions"] == 1
-    assert reward < -10.0
+    assert reward < -20.0
 
 
-def test_intercept_reward_is_symmetric_and_collision_dominates():
+def test_counterfactual_reward_is_symmetric_and_wait_cannot_farm():
     reward = _env().reward_function
     forward = reward.compute({"navigation_delta": 1, "wolf_distance": 99})
     reverse = reward.compute({"navigation_delta": -1, "wolf_distance": 99})
-    assert forward + reverse < 0.0  # two step costs remain; no progress loop profit
+    assert forward + reverse < 0.0
+    timed_wait = reward.compute({"well_timed_wait": True, "wolf_distance": 99})
+    assert timed_wait < 0.0
+    safety_out = reward.compute({"safety_delta": 1.0, "wolf_distance": 4})
+    safety_back = reward.compute({"safety_delta": -1.0, "wolf_distance": 4})
+    assert safety_out + safety_back < 0.0
     collision = reward.compute({"wolf_collision": True, "wolf_distance": 0})
-    assert collision <= -15.0
+    assert collision <= -22.0
 
 
-def test_untrained_residual_model_obeys_visible_intercept_prior():
+def test_new_models_forward_and_memory_contracts():
     torch.manual_seed(0)
-    env = _env()
-    obs = env._observation()
-    _, factory = load_model_plugin("001_intercept_safety_cnn", task_id=TASK_ID)
+    env = _env(); obs = env._observation(); x = torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
+    for name in discover_model_plugins(TASK_ID):
+        spec, factory = load_model_plugin(name, task_id=TASK_ID)
+        model = factory(tuple(obs.shape), env.action_space_n)
+        logits, value, context = rollout_forward(model, x, (0,))
+        assert logits.shape == (1, env.action_space_n)
+        assert value.shape == (1,)
+        if name == "001_horizon_film_shield": assert context is None
+        else: assert context is not None
+        assert torch.isfinite(logits).all() and torch.isfinite(value).all()
+
+
+def test_untrained_horizon_model_produces_valid_prior_action():
+    torch.manual_seed(0)
+    env = _env(); obs = env._observation()
+    _, factory = load_model_plugin("001_horizon_film_shield", task_id=TASK_ID)
     model = factory(tuple(obs.shape), env.action_space_n)
     x = torch.as_tensor(obs, dtype=torch.float32).unsqueeze(0)
     logits, _, _ = rollout_forward(model, x, (0,))
     mask = torch.as_tensor(env.valid_action_mask("task"), dtype=torch.bool)
     action = int(logits[0].masked_fill(~mask, -1e9).argmax().item())
-    waypoint = env._route_waypoint()
-    dy = waypoint[0] - env.agent_pos[0]
-    dx = waypoint[1] - env.agent_pos[1]
-    preferred = set()
-    if dy < 0: preferred.add(0)
-    if dy > 0: preferred.add(1)
-    if dx < 0: preferred.add(2)
-    if dx > 0: preferred.add(3)
-    valid_preferred = {a for a in preferred if bool(mask[a])}
-    if valid_preferred:
-        assert action in valid_preferred
-    else:
-        assert action == 6 or bool(mask[action])
+    assert bool(mask[action])

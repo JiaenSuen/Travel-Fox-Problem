@@ -76,6 +76,26 @@ class FoxRenderer:
                     knob = max(1, tile // 16)
                     draw.ellipse((x1 - pad - knob, (y0 + y1)//2 - knob, x1 - pad + knob, (y0 + y1)//2 + knob), fill=(232, 201, 126))
 
+        # Optional colored access doors. Drawn after ordinary doors so the access
+        # constraint remains visually salient even when a task shares the same doorway cells.
+        if hasattr(env, "render_colored_doors"):
+            access_palette = [(206, 75, 75), (72, 161, 104), (66, 117, 201)]
+            for (dr, dc), is_open, color, is_locked in env.render_colored_doors():
+                x0, y0 = ox + dc * tile, oy + dr * tile
+                x1, y1 = x0 + tile - 1, y0 + tile - 1
+                pad = max(2, tile // 7)
+                base = access_palette[int(color) % len(access_palette)]
+                if is_open:
+                    draw.rectangle((x0 + pad, y0 + 2, x1 - pad, y1 - 2), outline=base, width=max(2, tile // 9))
+                else:
+                    fill = tuple(min(255, int(v + (255 - v) * (0.18 if is_locked else 0.42))) for v in base)
+                    draw.rounded_rectangle((x0 + 2, y0 + 2, x1 - 2, y1 - 2), radius=max(2, tile // 10), fill=fill, outline=base, width=max(2, tile // 11))
+                    if is_locked:
+                        lock_w = max(4, tile // 4)
+                        cx, cy = (x0 + x1)//2, (y0 + y1)//2
+                        draw.rectangle((cx-lock_w//2, cy, cx+lock_w//2, cy+lock_w//2), fill=(247, 244, 229), outline=(83, 84, 87))
+                        draw.arc((cx-lock_w//2, cy-lock_w//2, cx+lock_w//2, cy+lock_w//3), 180, 360, fill=(83,84,87), width=max(1,tile//16))
+
         entities = env.render_entities() if hasattr(env, "render_entities") else {"objects": [], "goals": []}
         color_palette = [
             (220, 82, 82),   # red
@@ -87,7 +107,7 @@ class FoxRenderer:
         for color, (gr, gc) in entities.get("goals", []):
             gx0, gy0 = ox + gc * tile, oy + gr * tile
             pad = max(2, tile // 7)
-            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION"}:
+            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION", "KEYED-HAZARD-LOGISTICS"}:
                 fill, outline = (104, 187, 139), (59, 139, 98)
             else:
                 base = color_palette[int(color) % len(color_palette)]
@@ -98,10 +118,21 @@ class FoxRenderer:
                 radius=max(3, tile // 5), fill=fill, outline=outline, width=max(1, tile // 10),
             )
 
+        if hasattr(env, "render_keys"):
+            for color, (kr, kc) in env.render_keys():
+                x0, y0 = ox + kc * tile, oy + kr * tile
+                base = color_palette[int(color) % len(color_palette)]
+                cx, cy = x0 + tile // 2, y0 + tile // 2
+                rad = max(3, tile // 7)
+                draw.ellipse((cx-rad, cy-rad, cx+rad, cy+rad), outline=base, width=max(2, tile//10))
+                draw.line((cx+rad, cy, x0+tile-max(3,tile//8), cy), fill=base, width=max(2,tile//10))
+                tooth = max(2, tile//9)
+                draw.line((x0+tile-max(3,tile//8)-tooth, cy, x0+tile-max(3,tile//8)-tooth, cy+tooth), fill=base, width=max(2,tile//12))
+
         for color, (rr, rc) in entities.get("objects", []):
             x0, y0 = ox + rc * tile, oy + rr * tile
             p = max(3, tile // 5)
-            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION"}:
+            if env.TASK_CODE in {"LOCAL-TRANSPORT", "ROOM-DOOR-TRANSPORT", "MOVING-CARGO-EVASION", "KEYED-HAZARD-LOGISTICS"}:
                 fill, outline = (244, 178, 75), (181, 116, 36)
             else:
                 fill = color_palette[int(color) % len(color_palette)]
@@ -180,6 +211,12 @@ class FoxRenderer:
         ]
         if hasattr(env, "door_positions"):
             lines.append(f"Doors  {len(getattr(env, 'open_doors', ()))}/{len(env.door_positions)} open")
+        if hasattr(env, "keys_owned"):
+            lines.append(f"Keys  {len(getattr(env, 'keys_owned', ()) )}/{len(getattr(env, 'lock_order_colors', ()))}")
+        if hasattr(env, "delivered_count") and hasattr(env, "total_cargo"):
+            lines.append(f"Delivered  {env.delivered_count}/{env.total_cargo}")
+        if hasattr(env, "wolf_positions"):
+            lines.append(f"Hazards  {len(env.wolf_positions)}")
         lines.extend([
             f"Oracle  {env.oracle_steps}",
             f"Reward fn  {env.reward_module}",
@@ -256,29 +293,67 @@ class LiveWindow:
 
 
 class VideoRecorder:
-    """Write one MP4 per representative evaluated map/seed episode."""
+    """Write CFR H.264 MP4 episodes with explicit frame accounting.
 
-    def __init__(self, output_dir: str | Path, fps: int = 8) -> None:
+    The recorder keeps one simulator-state frame per environment step, includes the
+    reset state, and holds the terminal state briefly. Explicit yuv420p/CFR encoding
+    plus ``faststart`` avoids players reporting a shorter duration than the frame
+    sequence, while the final hold prevents the terminal state from disappearing at
+    EOF.
+    """
+
+    def __init__(self, output_dir: str | Path, fps: int = 8, terminal_hold_seconds: float = 0.75) -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.fps = fps
+        self.fps = max(1, int(fps))
+        self.terminal_hold_seconds = max(0.0, float(terminal_hold_seconds))
         self.writer = None
+        self.current_path: Path | None = None
+        self.last_frame: np.ndarray | None = None
+        self.frame_count = 0
+        self.last_frame_count = 0
 
     def start_episode(self, map_stem: str, seed: int) -> None:
         self.finish_episode()
         import imageio.v2 as imageio
 
         path = self.output_dir / f"{map_stem}_seed{seed}.mp4"
-        self.writer = imageio.get_writer(path, fps=self.fps, codec="libx264", quality=7)
+        self.current_path = path
+        self.last_frame = None
+        self.frame_count = 0
+        self.writer = imageio.get_writer(
+            path,
+            fps=self.fps,
+            codec="libx264",
+            quality=7,
+            pixelformat="yuv420p",
+            macro_block_size=1,
+            output_params=["-movflags", "+faststart"],
+        )
 
     def append(self, frame: np.ndarray) -> None:
-        if self.writer is not None:
-            self.writer.append_data(frame)
+        if self.writer is None:
+            return
+        stable = np.ascontiguousarray(frame, dtype=np.uint8)
+        self.writer.append_data(stable)
+        self.last_frame = stable.copy()
+        self.frame_count += 1
 
     def finish_episode(self) -> None:
-        if self.writer is not None:
-            self.writer.close()
-            self.writer = None
+        if self.writer is None:
+            return
+        if self.last_frame is not None and self.terminal_hold_seconds > 0.0:
+            hold = int(round(self.fps * self.terminal_hold_seconds))
+            for _ in range(hold):
+                self.writer.append_data(self.last_frame)
+                self.frame_count += 1
+        self.writer.close()
+        self.writer = None
+        self.last_frame_count = self.frame_count
+
+    @property
+    def encoded_duration_seconds(self) -> float:
+        return float(self.last_frame_count if self.writer is None else self.frame_count) / float(self.fps)
 
     def close(self) -> None:
         self.finish_episode()

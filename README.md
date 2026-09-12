@@ -13,7 +13,8 @@ TFP is organized as task-scoped research environments sharing one PPO/evaluation
 | `LOCAL-TRANSPORT` | **Local Transport** | 54 / 18 | 5×5, 7×7 | exploration, short cycles, pickup/delivery timing, compact memory |
 | `COLOR-SORT` | **Color-Matched Sorting** | 45 / 15 | 5×5, 7×7 | multi-object state, goal conditioning, target switching |
 | `ROOM-DOOR-TRANSPORT` | **Multi-Room Door Transport** | 50 / 20 | 5×5, 7×7 | long-horizon navigation, room memory, stateful doors |
-| `MOVING-CARGO-EVASION` | **Moving Cargo & Predator Avoidance** | 45 / 15 | 5×5, 7×7 | moving-target interception, timing, temporal dynamics, hazard avoidance |
+| `MOVING-CARGO-EVASION` | **Moving Cargo & Predator Avoidance** | 72 / 24 | 5×5, 7×7 | predictive interception, complex route topology, temporal dynamics, hazard avoidance |
+| `KEYED-HAZARD-LOGISTICS` | **Keyed Multi-Cargo Logistics** | 50 / 20 | 5×5, 7×7 | access dependencies, multi-goal logistics, long-horizon memory, dynamic safety |
 
 ### Local Transport
 
@@ -29,19 +30,41 @@ A long-horizon transport problem over 15×15 to 31×31 layouts with 4–16 rooms
 
 ### Moving Cargo & Predator Avoidance
 
-Cargo begins on a carrier moving continuously around a closed track. The agent must predict an interception point, reach the carrier at the correct time, pick up the cargo, and deliver it while a white wolf independently roams the traversable map. Contact with the wolf terminates the episode. The observation adds compact carrier motion/phase context and wolf bearing/proximity telemetry to local vision. A `WAIT` action supports interception timing. Maps span 12×12, 16×16, and 20×20 layouts with disjoint train/test sets.
+A dynamic transport POMDP in which cargo remains on a moving carrier until interception. The carrier follows an explicit cyclic route program over a visible rail network, while a white wolf independently roams the traversable map; contact is terminal. The packaged benchmark contains 72 training and 24 test layouts across 12×12, 16×16, 20×20, and 24×24 scales. Six motion topologies—ring, serpentine, figure-eight, clover, switchyard, and nested-loop—introduce turns, shared junctions, repeated junction visits, and route self-intersections. Spatial structures vary independently through open, slalom, room, block, corridor, and island families.
 
-## Moving-cargo method
+Local 5×5/7×7 perception is augmented only with compact motion telemetry: interception/delivery waypoint, carrier velocity and cadence phase, short-horizon carrier position, interception slack, upcoming turn proximity, and wolf bearing/observed velocity. `WAIT` supports interception timing. The policy does not receive the global map or complete route program.
 
-The dynamic task uses one reward and three models so architecture comparisons do not mix reward definitions.
+### Keyed Multi-Cargo Logistics
 
-| Model | Design | Intended advantage |
+A partial-observable multi-room logistics problem over Medium through Large+++ layouts (19×19 to 35×35). Colored doors form one-to-three access frontiers; matching persistent keycards must be acquired before deeper regions become reachable. Each episode contains 1–3 cargo items, a shared destination, capacity-one transport, and two independently roaming wolves. Cargo/key/goal locations and hazard trajectories vary by seed. `WAIT` enables risk-aware timing, while local 5×5/7×7 perception prevents direct global planning.
+
+The task is designed to study **hierarchical dependency reasoning, multi-goal ordering, event memory, and safe long-horizon control** in one compact grid benchmark. A low-bandwidth waypoint exposes only the next required doorway or active subgoal; the policy never receives the room graph, complete route, global map, or future hazard paths.
+
+## Task-specific advanced baselines
+
+### Dynamic interception
+
+The moving-cargo task shares one counterfactual reward across three architectures, isolating how temporal state and spatial-temporal fusion affect interception and hazard avoidance.
+
+| Model | Architecture | Research role |
 |---|---|---|
-| `001_intercept_safety_cnn` | local CNN + motion-context encoder + residual interception/safety prior | strongest low-complexity baseline for immediate dynamic decisions |
-| `002_intercept_action_memory` | baseline + learnable executed-action history | captures pursuit timing, waits, short oscillations, and evasive maneuver context |
-| `003_intercept_gru_memory` | baseline + action memory + GRU | estimates longer carrier/hazard dynamics under partial observability |
+| `001_horizon_film_shield` | gated FiLM visual encoder + multi-horizon residual safety prior | strong feed-forward baseline using current/future carrier geometry, route phase, interception slack, and predictive hazard state |
+| `002_cross_attention_dynamics` | eight-step telemetry Transformer + spatial cross-attention | lets recent carrier/wolf dynamics query local map features directly, targeting junction ambiguity and hazard-conditioned route choice |
+| `003_phase_world_gru` | carrier GRU + hazard GRU + action memory + phase gating | factorizes periodic target dynamics from stochastic hazard dynamics and retains longer temporal state |
 
-**`001_intercept_safety_potential`** uses symmetric progress toward the earliest feasible carrier interception before pickup and toward the delivery goal afterwards. The reward adds pickup/delivery milestones, invalid-action cost, local wolf-risk shaping, and a large terminal collision penalty. Progress is measured against the same dynamic-state snapshot before and after the agent action, so the agent cannot earn reward merely because the carrier moves closer by itself.
+**Counterfactual Intercept-Risk Potential.** `001_counterfactual_intercept_risk` uses courier-caused mission progress, symmetric action-caused safety change, and local safety regret. The regret term compares the chosen action with the safest locally feasible alternative under the same pre-motion hazard state. Carrier/wolf motion after the action cannot create free dense reward; `WAIT` remains net-costly, missed interaction windows are penalized, and predator contact is terminal.
+
+### Access-constrained multi-goal logistics
+
+`KEYED-HAZARD-LOGISTICS` turns multi-room transport into a long-horizon planning problem. Colored keycards unlock complete room-graph access frontiers rather than isolated doors, preventing trivial bypasses. Each episode contains 1–3 cargo items with capacity one and two roaming hazards, so successful policies must coordinate symbolic access, repeated delivery trips, memory, and risk-aware route selection.
+
+| Model | Architecture | Research role |
+|---|---|---|
+| `001_dependency_film_shield` | local CNN + symbolic FiLM + bounded dependency/safety prior | feed-forward baseline that explicitly conditions perception on key inventory, active subgoal, cargo progress, and hazard state |
+| `002_event_memory_transformer` | compact ten-step event/state Transformer | retains access, delivery, and hazard transitions without recurrently storing image frames |
+| `003_dual_timescale_gru_shield` | long-timescale task GRU + short-timescale hazard GRU + action memory | separates persistent mission state from rapidly changing safety state for long-horizon POMDP control |
+
+**Dependency-Aware Risk Potential.** `001_dependency_risk_potential` shapes executable progress toward the current symbolic subgoal and action-caused risk reduction, then adds sparse key, cargo-pickup, delivery, and completion milestones. Door bonuses are deliberately small; useful unlocking is valued mainly because it lowers executable cost. Closing, invalid interaction, early drop, repeated-state loops, and predator contact are penalized.
 
 ## Benchmark results
 
@@ -99,14 +122,28 @@ The dynamic task uses one reward and three models so architecture comparisons do
 <!-- TFP-BENCHMARK:MOVING-CARGO-EVASION:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_intercept_safety_cnn` | 446.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `002_intercept_action_memory` | 478.7k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `003_intercept_gru_memory` | 615.3k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `001_horizon_film_shield` | 821.0k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `002_cross_attention_dynamics` | 225.4k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_phase_world_gru` | 975.0k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-*Evaluation: 15 test maps × 5 seeds = 75 episodes/run · `local` 7×7 · `001_intercept_safety_potential` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+*Evaluation: 24 test maps × 5 seeds = 120 episodes/run · `local` 7×7 · `001_counterfactual_intercept_risk` · `task` mask · `001_ppo_categorical`. `—` = pending.*
 <!-- TFP-BENCHMARK:MOVING-CARGO-EVASION:END -->
 
 ![MOVING-CARGO-EVASION benchmark](results/MOVING-CARGO-EVASION/summary.png)
+
+### KEYED-HAZARD-LOGISTICS
+
+<!-- TFP-BENCHMARK:KEYED-HAZARD-LOGISTICS:START -->
+| Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `001_dependency_film_shield` | 807.2k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `002_event_memory_transformer` | 928.0k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_dual_timescale_gru_shield` | 989.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+
+*Evaluation: 20 test maps × 5 seeds = 100 episodes/run · `local` 7×7 · `001_dependency_risk_potential` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+<!-- TFP-BENCHMARK:KEYED-HAZARD-LOGISTICS:END -->
+
+![KEYED-HAZARD-LOGISTICS benchmark](results/KEYED-HAZARD-LOGISTICS/summary.png)
 
 ## Key research techniques
 
@@ -114,9 +151,9 @@ The dynamic task uses one reward and three models so architecture comparisons do
 
 **Tabu / TabuX.** Tabu controllers are inference-time anti-deadlock mechanisms. Basic Tabu detects short repeated action cycles and suppresses the action that would continue them. TabuX extends this to repeated local state-action basins, allowing the agent to escape persistent corner, corridor, or pickup-area loops. Because the controller operates after neural inference and is disabled during PPO rollout collection, learning quality and deployment-time cycle handling can be evaluated separately.
 
-**Reward design.** Task-owned rewards make assumptions explicit. Dense rewards use symmetric geodesic or actionable progress so reversing a move does not produce net positive shaping. Interaction-aware variants penalize ignored pickup/delivery opportunities. Multi-Room Door Transport prices closed-door traversal as an additional action rather than paying a direct door bonus. Moving Cargo & Predator Avoidance combines dynamic interception potential with near-field safety shaping and terminal collision cost.
+**Reward design.** Task-owned rewards make assumptions explicit. Dense rewards use symmetric geodesic or actionable progress so reversing a move does not create net positive shaping. Multi-Room Door Transport prices closed-door traversal as an additional action rather than paying a direct door bonus. Moving Cargo adds counterfactual local safety regret so avoidable unsafe actions are distinguishable from unavoidable risk. Keyed Logistics combines executable dependency progress with action-caused hazard-risk reduction and milestone rewards for access and delivery.
 
-**Structured residual priors.** The larger room and moving-target tasks use low-bandwidth navigation cues as fixed action-logit priors while PPO learns residual corrections. This shifts learning capacity away from rediscovering basic shortest-route or interception geometry and toward interaction, timing, obstacle handling, hazard response, and memory. The policy does not receive a global map, complete path, or oracle action sequence.
+**Structured residual priors and soft safety shields.** The larger room, moving-target, and keyed-logistics tasks use low-bandwidth task cues as bounded action-logit priors while PPO learns residual corrections. Moving-target priors combine multi-horizon interception with predictive hazard suppression; keyed logistics combines the next access/subgoal waypoint with a soft two-hazard shield. This shifts capacity toward interaction, temporal state, dependency reasoning, and recovery without exposing a global map, complete path, or oracle action sequence.
 
 **GoBI-style exploration.** `GoBI Compact` combines episodic novelty with a small latent reachability model. It evaluates whether limited model-based imagination can improve local exploration while remaining practical for resource-constrained agents. The imagination budget is deliberately small so the intrinsic module stays an ablation component rather than becoming the dominant world model.
 
@@ -145,7 +182,7 @@ The trainer and evaluator instantiate environments through the task registry, so
 python tfp_studio.py
 ```
 
-Select **Task → Model → Reward → view size → action mask**, then train or evaluate. **Compare** can filter records by task and benchmark scope. Experiment presets are stored under `experiments/<TASK-CODE>/`.
+Select **Task → Model → Reward → view size → action mask**, then train or evaluate. **Compare** can filter records by task and benchmark scope. Experiment presets are stored under `experiments/<TASK-CODE>/`. Video evaluation writes constant-frame-rate H.264 MP4 files with the reset state and a short terminal-state hold so exported playback matches the recorded simulator sequence.
 
 To rebuild result tables and summary PNGs:
 

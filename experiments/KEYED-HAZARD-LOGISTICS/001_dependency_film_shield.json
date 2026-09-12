@@ -1,0 +1,21 @@
+{
+  "task": "KEYED-HAZARD-LOGISTICS",
+  "model": "001_dependency_film_shield",
+  "algorithm": "ppo",
+  "reward": "001_dependency_risk_potential",
+  "mask_mode": "task",
+  "view_size": 7,
+  "total_timesteps": 450000,
+  "num_envs": 8,
+  "rollout_steps": 256,
+  "learning_rate": 0.00016,
+  "gamma": 0.998,
+  "gae_lambda": 0.96,
+  "clip_coef": 0.18,
+  "entropy_coef": 0.004,
+  "value_coef": 0.5,
+  "max_grad_norm": 0.5,
+  "update_epochs": 4,
+  "minibatch_size": 512,
+  "experiment_tag": "dependency_film_risk_shield"
+}
