@@ -1,3 +1,3 @@
-from .ppo import PPOConfig, train_ppo
+from .ppo import PPOConfig, TrainingControl, train_ppo
 
-__all__ = ["PPOConfig", "train_ppo"]
+__all__ = ["PPOConfig", "TrainingControl", "train_ppo"]

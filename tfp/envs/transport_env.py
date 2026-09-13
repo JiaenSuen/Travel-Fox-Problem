@@ -80,6 +80,7 @@ class TransportEnv:
         self.last_event = "reset"
         self._goal_distance_field: Optional[np.ndarray] = None
         self._object_distance_field: Optional[np.ndarray] = None
+        self._state_visits: dict[tuple[Tuple[int, int], bool], int] = {}
 
     def reset(self, seed: Optional[int] = None, map_path: Optional[str | Path] = None) -> Tuple[np.ndarray, Dict[str, object]]:
         """Reset an episode with deterministic map-by-seed behavior when requested."""
@@ -125,6 +126,7 @@ class TransportEnv:
         self.initial_object_pos = self.object_pos
         self._object_distance_field = self._distance_field(self.object_pos)
         self.oracle_steps = int(start_distance_field[self.object_pos] + 1 + self._goal_distance_field[self.object_pos] + 1)
+        self._state_visits = {(self.agent_pos, self.carrying): 1}
         return self._observation(), self._info(success=False)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[str, object]]:
@@ -139,6 +141,7 @@ class TransportEnv:
         collision = False
         pickup = False
         delivered = False
+        early_drop = False
         moved = False
         distance_before = self._target_distance(self.agent_pos)
         pickup_available_before = bool((not self.carrying) and self.object_pos == self.agent_pos)
@@ -180,6 +183,7 @@ class TransportEnv:
                 self._object_distance_field = self._distance_field(self.object_pos)
                 self.invalid_actions += 1
                 invalid = True
+                early_drop = True
                 self.last_event = "early_drop"
             else:
                 self.invalid_actions += 1
@@ -192,6 +196,10 @@ class TransportEnv:
         if moved:
             self.last_event = "progress" if distance_delta > 0 else "move"
 
+        state_key = (self.agent_pos, bool(self.carrying))
+        visit_count = self._state_visits.get(state_key, 0) + 1
+        self._state_visits[state_key] = visit_count
+
         transition = {
             "action": int(action),
             "moved": moved,
@@ -199,6 +207,7 @@ class TransportEnv:
             "collision": collision,
             "pickup": pickup,
             "delivered": delivered,
+            "early_drop": early_drop,
             "distance_before": int(distance_before),
             "distance_after": int(distance_after),
             "distance_delta": distance_delta,
@@ -208,6 +217,8 @@ class TransportEnv:
             "missed_pickup": bool(pickup_available_before and int(action) != 4),
             "missed_delivery": bool(delivery_available_before and int(action) != 5),
             "step": int(self.steps),
+            "visit_count": int(visit_count),
+            "repeat_visit": bool(visit_count >= 3),
         }
         reward = float(self.reward_function.compute(transition))
         self.last_reward = reward

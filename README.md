@@ -1,4 +1,4 @@
-# TFP — Traveling Fox Problems
+# TFP — A Lightweight POMDP Benchmark for Memory-Aware Reinforcement Learning in Partially Observable Robotic Tasks
 
 **A lightweight PyTorch benchmark for reinforcement learning under local perception, memory, interaction, exploration, moving targets, and dynamic hazards.**
 
@@ -18,7 +18,7 @@ TFP is organized as task-scoped research environments sharing one PPO/evaluation
 
 ### Local Transport
 
-Single-cargo transport across 10×10, 15×15, and 20×20 layouts. The agent observes only a local crop and must locate cargo, execute `PICKUP`, and deliver it to the destination. The task is intentionally compact enough for controlled ablations while still exposing perceptual aliasing, exploration failure, interaction loops, and deployment-time deadlocks. It is the primary environment for Action Memory, GRU policies, Tabu/TabuX, GoBI-style exploration, bootstrap recurrent training, and reward-shaping studies.
+Single-cargo transport across 10×10, 15×15, and 20×20 layouts. The agent observes only a local crop and must locate cargo, execute `PICKUP`, and deliver it to the destination. The task is intentionally compact enough for controlled ablations while still exposing perceptual aliasing, exploration failure, interaction loops, and deployment-time deadlocks. It is the primary environment for Action Memory, GRU policies, Tabu/TabuX, GoBI-style exploration, bootstrap recurrent training, and reward-shaping studies. The controlled benchmark retains the historical default reward; `004_phase_consistent_transport` is provided as a new reward-study variant that separates navigation shaping from pickup/drop phase transitions and repeated-state penalties.
 
 ### Color-Matched Sorting
 
@@ -64,7 +64,7 @@ The moving-cargo task shares one counterfactual reward across three architecture
 | `002_event_memory_transformer` | compact ten-step event/state Transformer | retains access, delivery, and hazard transitions without recurrently storing image frames |
 | `003_dual_timescale_gru_shield` | long-timescale task GRU + short-timescale hazard GRU + action memory | separates persistent mission state from rapidly changing safety state for long-horizon POMDP control |
 
-**Dependency-Aware Risk Potential.** `001_dependency_risk_potential` shapes executable progress toward the current symbolic subgoal and action-caused risk reduction, then adds sparse key, cargo-pickup, delivery, and completion milestones. Door bonuses are deliberately small; useful unlocking is valued mainly because it lowers executable cost. Closing, invalid interaction, early drop, repeated-state loops, and predator contact are penalized.
+**Predictive Dependency-Risk Potential.** `002_predictive_hazard_potential` combines executable subgoal progress with sparse key, cargo, delivery, and completion milestones, then adds motion-aware safety credit assignment. Observed wolf velocity and closing rate support one-step predictive risk, local safety regret penalizes avoidably dangerous choices, and near misses provide a pre-collision learning signal. Exogenous wolf motion cannot create free dense safety reward. The earlier `001_dependency_risk_potential` remains available for ablation.
 
 ## Benchmark results
 
@@ -136,11 +136,11 @@ The moving-cargo task shares one counterfactual reward across three architecture
 <!-- TFP-BENCHMARK:KEYED-HAZARD-LOGISTICS:START -->
 | Model | Params | Runs | N | Success ↑ | Completion ↑ | Pickup ↑ | Steps ↓ | Return ↑ | Path Eff. ↑ | Collision ↓ | Invalid ↓ | Cycles ↓ | Interact cycles ↓ | Revisit ↓ | Infer ms ↓ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `001_dependency_film_shield` | 807.2k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `002_event_memory_transformer` | 928.0k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
-| `003_dual_timescale_gru_shield` | 989.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `001_dependency_film_shield` | 808.5k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `002_event_memory_transformer` | 929.8k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| `003_dual_timescale_gru_shield` | 992.0k | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 
-*Evaluation: 20 test maps × 5 seeds = 100 episodes/run · `local` 7×7 · `001_dependency_risk_potential` · `task` mask · `001_ppo_categorical`. `—` = pending.*
+*Evaluation: 20 test maps × 5 seeds = 100 episodes/run · `local` 7×7 · `002_predictive_hazard_potential` · `task` mask · `001_ppo_categorical`. `—` = pending.*
 <!-- TFP-BENCHMARK:KEYED-HAZARD-LOGISTICS:END -->
 
 ![KEYED-HAZARD-LOGISTICS benchmark](results/KEYED-HAZARD-LOGISTICS/summary.png)
@@ -151,13 +151,19 @@ The moving-cargo task shares one counterfactual reward across three architecture
 
 **Tabu / TabuX.** Tabu controllers are inference-time anti-deadlock mechanisms. Basic Tabu detects short repeated action cycles and suppresses the action that would continue them. TabuX extends this to repeated local state-action basins, allowing the agent to escape persistent corner, corridor, or pickup-area loops. Because the controller operates after neural inference and is disabled during PPO rollout collection, learning quality and deployment-time cycle handling can be evaluated separately.
 
-**Reward design.** Task-owned rewards make assumptions explicit. Dense rewards use symmetric geodesic or actionable progress so reversing a move does not create net positive shaping. Multi-Room Door Transport prices closed-door traversal as an additional action rather than paying a direct door bonus. Moving Cargo adds counterfactual local safety regret so avoidable unsafe actions are distinguishable from unavoidable risk. Keyed Logistics combines executable dependency progress with action-caused hazard-risk reduction and milestone rewards for access and delivery.
+**Reward design.** Task-owned rewards make assumptions explicit. Dense rewards use symmetric geodesic or actionable progress so reversing a move does not create net positive shaping. Multi-Room Door Transport prices closed-door traversal as an additional action rather than paying a direct door bonus. Moving Cargo adds counterfactual local safety regret so avoidable unsafe actions are distinguishable from unavoidable risk. Keyed Logistics extends this idea with observed wolf velocity, closing rate, predictive risk improvement, near-miss penalties, and explicit failure-cause export. Local Transport also includes a phase-consistent reward-study variant that separates navigation progress from pickup/drop phase transitions.
 
 **Structured residual priors and soft safety shields.** The larger room, moving-target, and keyed-logistics tasks use low-bandwidth task cues as bounded action-logit priors while PPO learns residual corrections. Moving-target priors combine multi-horizon interception with predictive hazard suppression; keyed logistics combines the next access/subgoal waypoint with a soft two-hazard shield. This shifts capacity toward interaction, temporal state, dependency reasoning, and recovery without exposing a global map, complete path, or oracle action sequence.
 
 **GoBI-style exploration.** `GoBI Compact` combines episodic novelty with a small latent reachability model. It evaluates whether limited model-based imagination can improve local exploration while remaining practical for resource-constrained agents. The imagination budget is deliberately small so the intrinsic module stays an ablation component rather than becoming the dominant world model.
 
 **Bootstrap recurrent training.** `PPO-GRU Bootstrap` initializes a recurrent policy from a mature feed-forward encoder and actor/value heads. The recurrent residual is introduced gradually before full fine-tuning. This reduces destructive optimization when temporal capacity is added to an already useful visual policy and provides a controlled baseline for recurrent-memory studies.
+
+## Academic discussion
+
+`academic_discussion/` preserves the research record behind the benchmark: controlled findings, failed approaches, reward-design revisions, model rationale, threats to validity, and proposed ablations. Claims are labeled as **controlled results**, **development observations**, or **hypotheses** so short debugging runs are not confused with formal benchmark evidence.
+
+Start with [`academic_discussion/README.md`](academic_discussion/README.md). The Local Transport discussion analyzes the existing 180-episode references; the Keyed Logistics discussion focuses on predator-driven failures and safety-specific evaluation.
 
 ## Task-scoped architecture
 
@@ -182,7 +188,9 @@ The trainer and evaluator instantiate environments through the task registry, so
 python tfp_studio.py
 ```
 
-Select **Task → Model → Reward → view size → action mask**, then train or evaluate. **Compare** can filter records by task and benchmark scope. Experiment presets are stored under `experiments/<TASK-CODE>/`. Video evaluation writes constant-frame-rate H.264 MP4 files with the reset state and a short terminal-state hold so exported playback matches the recorded simulator sequence.
+Select **Task → Model → Reward → view size → action mask**, then train or evaluate. Once training starts, the complete protocol form is locked and the frozen configuration is identified by a protocol fingerprint. **Pause / Resume** suspends rollout collection without changing the run configuration; **Graceful Stop** writes a separate interrupted checkpoint. **Compare** can filter records by task and benchmark scope.
+
+Evaluation display supports windowed or fullscreen rendering (`F11` toggles fullscreen, `Esc` returns to windowed mode). Video export supports selectable FPS and writes constant-frame-rate H.264 MP4 with a reset frame, terminal hold, fade, and explicit `EPISODE COMPLETE` outro so the final simulator state is shown before container EOF.
 
 To rebuild result tables and summary PNGs:
 

@@ -32,6 +32,14 @@ class TFPCycleSafeRewardTests(unittest.TestCase):
         })
         self.assertAlmostEqual(pickup, 1.49, places=6)
 
+    def test_phase_consistent_reward_penalizes_early_drop_and_repeat_loops(self):
+        reward = load_reward_plugin('004_phase_consistent_transport', task_id='TFP-LocalTransport')[1]()
+        fwd = reward.compute({'moved': True, 'distance_delta': 1})
+        back = reward.compute({'moved': True, 'distance_delta': -1})
+        self.assertLess(fwd + back, 0.0)
+        self.assertLess(reward.compute({'early_drop': True, 'invalid': True}), -1.0)
+        self.assertLess(reward.compute({'repeat_visit': True, 'visit_count': 6}), 0.0)
+
     def test_none_action_mask_is_removed(self):
         task = get_task('TFP-LocalTransport')
         one_map = discover_maps(task.train_map_dir)[:1]

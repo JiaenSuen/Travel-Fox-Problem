@@ -252,9 +252,14 @@ class FoxRenderer:
 
 
 class LiveWindow:
-    """Pygame live display with a clickable robot-state drawer toggle."""
+    """Pygame live display with optional fullscreen presentation.
 
-    def __init__(self) -> None:
+    F11 toggles fullscreen at runtime; Escape returns to windowed mode.  Frames are
+    aspect-preserving scaled and centered, so the research display can fill a projector
+    or monitor without changing the evaluator's rendered pixel geometry.
+    """
+
+    def __init__(self, fullscreen: bool = False) -> None:
         import pygame
 
         self.pygame = pygame
@@ -262,26 +267,66 @@ class LiveWindow:
         self.screen = None
         self.closed = False
         self.status_open = False
+        self.fullscreen = bool(fullscreen)
+        self._window_size: tuple[int, int] | None = None
+        self._last_viewport = (0, 0, 1, 1)
+
+    def _set_mode(self, frame_w: int, frame_h: int) -> None:
+        pygame = self.pygame
+        if self._window_size is None:
+            self._window_size = (frame_w, frame_h)
+        if self.fullscreen:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN | pygame.DOUBLEBUF)
+        else:
+            self.screen = pygame.display.set_mode(self._window_size, pygame.RESIZABLE | pygame.DOUBLEBUF)
+        pygame.display.set_caption("TFP Research Visualizer · F11 fullscreen · Esc windowed")
+
+    def _toggle_fullscreen(self, frame_w: int, frame_h: int) -> None:
+        self.fullscreen = not self.fullscreen
+        self._set_mode(frame_w, frame_h)
+
+    def _frame_coordinates(self, pos: tuple[int, int], frame_w: int, frame_h: int) -> tuple[float, float]:
+        vx, vy, vw, vh = self._last_viewport
+        if vw <= 0 or vh <= 0:
+            return -1.0, -1.0
+        return (pos[0] - vx) * frame_w / vw, (pos[1] - vy) * frame_h / vh
 
     def show(self, frame: np.ndarray) -> bool:
         if self.closed:
             return False
         pygame = self.pygame
+        h, w = frame.shape[:2]
+        if self.screen is None:
+            self._set_mode(w, h)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.closed = True
                 return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F11:
+                    self._toggle_fullscreen(w, h)
+                elif event.key == pygame.K_ESCAPE and self.fullscreen:
+                    self.fullscreen = False
+                    self._set_mode(w, h)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                x, y = event.pos
+                x, y = self._frame_coordinates(event.pos, w, h)
                 x0, y0, x1, y1 = FoxRenderer.STATUS_BUTTON
                 if x0 <= x <= x1 and y0 <= y <= y1:
                     self.status_open = not self.status_open
-        h, w = frame.shape[:2]
-        if self.screen is None:
-            self.screen = pygame.display.set_mode((w, h))
-            pygame.display.set_caption("TFP Research Visualizer")
+
+        assert self.screen is not None
+        screen_w, screen_h = self.screen.get_size()
+        scale = min(screen_w / max(1, w), screen_h / max(1, h))
+        draw_w = max(1, int(round(w * scale)))
+        draw_h = max(1, int(round(h * scale)))
+        ox = (screen_w - draw_w) // 2
+        oy = (screen_h - draw_h) // 2
+        self._last_viewport = (ox, oy, draw_w, draw_h)
         surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
-        self.screen.blit(surface, (0, 0))
+        if (draw_w, draw_h) != (w, h):
+            surface = pygame.transform.smoothscale(surface, (draw_w, draw_h))
+        self.screen.fill((16, 18, 22))
+        self.screen.blit(surface, (ox, oy))
         pygame.display.flip()
         pygame.time.delay(45)
         return True
@@ -293,25 +338,33 @@ class LiveWindow:
 
 
 class VideoRecorder:
-    """Write CFR H.264 MP4 episodes with explicit frame accounting.
+    """Write playback-robust CFR H.264 MP4 episodes with an explicit outro.
 
-    The recorder keeps one simulator-state frame per environment step, includes the
-    reset state, and holds the terminal state briefly. Explicit yuv420p/CFR encoding
-    plus ``faststart`` avoids players reporting a shorter duration than the frame
-    sequence, while the final hold prevents the terminal state from disappearing at
-    EOF.
+    Every simulator state is encoded exactly once (including reset).  The terminal
+    frame is held before a separate fade/end-card segment, so the actual terminal
+    state occurs well before the container EOF.  This is deliberately redundant with
+    CFR metadata: several desktop players visually truncate the final GOP even when
+    ffprobe reports the correct duration.
     """
 
-    def __init__(self, output_dir: str | Path, fps: int = 8, terminal_hold_seconds: float = 0.75) -> None:
+    def __init__(
+        self,
+        output_dir: str | Path,
+        fps: int = 8,
+        terminal_hold_seconds: float = 1.0,
+        outro_seconds: float = 1.5,
+    ) -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.fps = max(1, int(fps))
         self.terminal_hold_seconds = max(0.0, float(terminal_hold_seconds))
+        self.outro_seconds = max(0.0, float(outro_seconds))
         self.writer = None
         self.current_path: Path | None = None
         self.last_frame: np.ndarray | None = None
         self.frame_count = 0
         self.last_frame_count = 0
+        self.episode_label = "Episode complete"
 
     def start_episode(self, map_stem: str, seed: int) -> None:
         self.finish_episode()
@@ -321,6 +374,7 @@ class VideoRecorder:
         self.current_path = path
         self.last_frame = None
         self.frame_count = 0
+        self.episode_label = f"Episode complete · {map_stem} · seed {seed}"
         self.writer = imageio.get_writer(
             path,
             fps=self.fps,
@@ -328,7 +382,19 @@ class VideoRecorder:
             quality=7,
             pixelformat="yuv420p",
             macro_block_size=1,
-            output_params=["-movflags", "+faststart"],
+            ffmpeg_log_level="error",
+            output_params=[
+                "-movflags", "+faststart",
+                "-vsync", "cfr",
+                "-r", str(self.fps),
+                # Keep GOPs short and disable B-frame reordering. Some desktop players
+                # visually stop at the final GOP even when MP4 duration metadata is
+                # correct; a one-second GOP plus an explicit outro makes EOF robust.
+                "-g", str(self.fps),
+                "-keyint_min", str(self.fps),
+                "-sc_threshold", "0",
+                "-bf", "0",
+            ],
         )
 
     def append(self, frame: np.ndarray) -> None:
@@ -339,13 +405,43 @@ class VideoRecorder:
         self.last_frame = stable.copy()
         self.frame_count += 1
 
+    def _outro_frame(self, alpha: float) -> np.ndarray:
+        assert self.last_frame is not None
+        alpha = float(max(0.0, min(1.0, alpha)))
+        base = Image.fromarray(self.last_frame).convert("RGB")
+        dark = Image.new("RGB", base.size, (17, 20, 27))
+        image = Image.blend(base, dark, alpha)
+        draw = ImageDraw.Draw(image)
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", max(18, image.height // 32))
+            small = ImageFont.truetype("DejaVuSans.ttf", max(12, image.height // 50))
+        except OSError:
+            font = small = ImageFont.load_default()
+        if alpha >= 0.55:
+            title = "EPISODE COMPLETE"
+            bbox = draw.textbbox((0, 0), title, font=font)
+            tw = bbox[2] - bbox[0]
+            draw.text(((image.width - tw) / 2, image.height * 0.44), title, fill=(245, 247, 250), font=font)
+            bbox2 = draw.textbbox((0, 0), self.episode_label, font=small)
+            tw2 = bbox2[2] - bbox2[0]
+            draw.text(((image.width - tw2) / 2, image.height * 0.51), self.episode_label, fill=(191, 201, 214), font=small)
+        return np.asarray(image, dtype=np.uint8)
+
     def finish_episode(self) -> None:
         if self.writer is None:
             return
-        if self.last_frame is not None and self.terminal_hold_seconds > 0.0:
+        if self.last_frame is not None:
             hold = int(round(self.fps * self.terminal_hold_seconds))
             for _ in range(hold):
                 self.writer.append_data(self.last_frame)
+                self.frame_count += 1
+            outro = int(round(self.fps * self.outro_seconds))
+            for i in range(outro):
+                # Fade during the first ~60%, then keep a stable end card.  Players
+                # that visually clip the final few frames still show the terminal
+                # state and completion cue before EOF.
+                alpha = min(0.82, 0.82 * (i + 1) / max(1, int(outro * 0.6)))
+                self.writer.append_data(self._outro_frame(alpha))
                 self.frame_count += 1
         self.writer.close()
         self.writer = None

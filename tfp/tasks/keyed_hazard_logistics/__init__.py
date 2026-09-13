@@ -24,7 +24,7 @@ TASK_SPEC = TaskSpec(
     default_view_size=7,
     supported_view_sizes=(5, 7),
     default_model="001_dependency_film_shield",
-    default_reward="001_dependency_risk_potential",
+    default_reward="002_predictive_hazard_potential",
 )
 
 try:

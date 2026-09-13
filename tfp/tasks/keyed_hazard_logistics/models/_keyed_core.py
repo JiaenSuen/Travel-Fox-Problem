@@ -10,8 +10,8 @@ from tfp.models._action_memory_core import LearnableActionMemory
 
 SPATIAL_CHANNELS = 13
 CONTEXT_START = 13
-CONTEXT_DIM = 24
-OBS_CHANNELS = 37
+CONTEXT_DIM = 30
+OBS_CHANNELS = 43
 
 
 def _context(x: torch.Tensor) -> torch.Tensor:
@@ -51,19 +51,31 @@ def dependency_safety_prior_logits(x: torch.Tensor, action_count: int, scale: fl
         bias[:, 6] += toggle * 2.1
         bias[:, 6] -= adjacent_locked.to(x.dtype) * 0.8
 
-    # Soft risk shield from two compact wolf bearings. We suppress motion toward a
-    # nearby hazard but leave PPO free to override it when the route context demands.
-    for base in (29, 32):
+    # Motion-aware soft shield. Current wolf bearing is combined with observed
+    # one-step velocity, so an approaching predator suppresses the cell it is moving
+    # toward rather than only the cell it currently occupies. No future RNG target or
+    # global hazard path is exposed to the policy.
+    hazard_specs = ((29, 37, 38, 41), (32, 39, 40, 42))
+    for base, vy_idx, vx_idx, closing_idx in hazard_specs:
         wy = x[:, base].mean(dim=(-2, -1))
         wx = x[:, base + 1].mean(dim=(-2, -1))
         dist = x[:, base + 2].mean(dim=(-2, -1))
-        closeness = torch.relu(0.55 - dist) / 0.55
-        bias[:, 0] -= closeness * torch.relu(-wy) * 2.1
-        bias[:, 1] -= closeness * torch.relu(wy) * 2.1
-        bias[:, 2] -= closeness * torch.relu(-wx) * 2.1
-        bias[:, 3] -= closeness * torch.relu(wx) * 2.1
+        vy = x[:, vy_idx].mean(dim=(-2, -1))
+        vx = x[:, vx_idx].mean(dim=(-2, -1))
+        closing = torch.relu(x[:, closing_idx].mean(dim=(-2, -1)))
+        pred_y = wy + 0.125 * vy
+        pred_x = wx + 0.125 * vx
+        closeness = torch.relu(0.62 - dist) / 0.62
+        danger = closeness * (1.0 + 0.65 * closing)
+        bias[:, 0] -= danger * torch.relu(-pred_y) * 2.8
+        bias[:, 1] -= danger * torch.relu(pred_y) * 2.8
+        bias[:, 2] -= danger * torch.relu(-pred_x) * 2.8
+        bias[:, 3] -= danger * torch.relu(pred_x) * 2.8
         if action_count > 7:
-            bias[:, 7] += torch.relu(0.28 - dist) / 0.28 * 0.85
+            # Waiting is useful only as a timing action. An approaching predator makes
+            # staying still less attractive; a nearby lateral hazard can make it safer.
+            wait_support = torch.relu(0.34 - dist) / 0.34 * (1.0 - 0.8 * closing)
+            bias[:, 7] += wait_support * 0.9
 
     # Explicitly suppress stepping onto a visible adjacent wolf.
     radius = x.shape[-1] // 2
@@ -194,7 +206,7 @@ class DualTimescaleGRUActorCritic(nn.Module):
     """Long task-state memory + short hazard dynamics + explicit action history."""
 
     TASK_CONTEXT = tuple(range(13, 29)) + (35, 36)
-    HAZARD_CONTEXT = tuple(range(29, 35))
+    HAZARD_CONTEXT = tuple(range(29, 35)) + tuple(range(37, 43))
 
     def __init__(self, observation_shape: tuple[int, int, int], action_count: int) -> None:
         super().__init__()

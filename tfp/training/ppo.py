@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import hashlib
+import json
 import re
+import threading
 from typing import Callable, Sequence
 
 import numpy as np
@@ -47,6 +50,58 @@ class PPOConfig:
     device: str = "cuda"
     experiment_tag: str = ""
 
+
+
+
+class TrainingControl:
+    """Thread-safe pause/resume/stop control for one immutable training run.
+
+    PPOConfig remains frozen; this object controls execution state only.  Pausing never
+    mutates hyperparameters, maps, reward, policy, or action-mask protocol.
+    """
+
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._paused = False
+        self._stop_requested = False
+
+    @property
+    def paused(self) -> bool:
+        with self._condition:
+            return self._paused
+
+    @property
+    def stop_requested(self) -> bool:
+        with self._condition:
+            return self._stop_requested
+
+    def pause(self) -> None:
+        with self._condition:
+            if not self._stop_requested:
+                self._paused = True
+
+    def resume(self) -> None:
+        with self._condition:
+            self._paused = False
+            self._condition.notify_all()
+
+    def request_stop(self) -> None:
+        with self._condition:
+            self._stop_requested = True
+            self._paused = False
+            self._condition.notify_all()
+
+    def wait_if_paused(self) -> bool:
+        """Block while paused; return True when a graceful stop was requested."""
+        with self._condition:
+            while self._paused and not self._stop_requested:
+                self._condition.wait(timeout=0.25)
+            return self._stop_requested
+
+
+def _protocol_fingerprint(config: PPOConfig) -> str:
+    payload = json.dumps(asdict(config), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
 def _distribution(logits: torch.Tensor, mask: torch.Tensor) -> Categorical:
     return Categorical(logits=logits.masked_fill(~mask, -1e9))
@@ -160,6 +215,7 @@ def _checkpoint_payload(
         "device": config.device,
         "experiment_tag": config.experiment_tag,
         "training_config": asdict(config),
+        "protocol_fingerprint": _protocol_fingerprint(config),
         "checkpoint_role": role,
         "checkpoint_step": int(global_step),
         "selection_metrics": selection_metrics or {},
@@ -179,8 +235,11 @@ def train_ppo(
     config: PPOConfig | None = None,
     log_callback: Callable[[str], None] | None = None,
     progress_callback: Callable[[dict[str, object]], None] | None = None,
+    control: TrainingControl | None = None,
 ) -> Path:
     config = config or PPOConfig()
+    control = control or TrainingControl()
+    protocol_fingerprint = _protocol_fingerprint(config)
     run_mask_mode = str(config.action_mask_mode)
     if run_mask_mode not in {"task", "valid"}:
         raise ValueError(f"Unsupported action mask mode: {run_mask_mode}")
@@ -197,7 +256,11 @@ def train_ppo(
         raise ValueError(f"Policy {config.policy_module} is not compatible with PPO.")
     policy = policy_factory()
     if log_callback:
-        log_callback(f"Protocol lock: action_mask={run_mask_mode} (immutable for this training run).")
+        log_callback(
+            f"Protocol snapshot {protocol_fingerprint}: task={config.task_id} model={model_module} "
+            f"policy={config.policy_module} reward={config.reward_module} mask={run_mask_mode} "
+            f"view={config.view_size} seed={config.seed}. All training parameters are immutable until the run ends."
+        )
 
     task = get_task(config.task_id)
     if config.view_size not in task.supported_view_sizes:
@@ -286,7 +349,18 @@ def train_ppo(
         )
 
     intrinsic_loss = 0.0
+    interrupted = False
+    pause_logged = False
     for update in range(1, updates + 1):
+        if control.paused and not pause_logged and log_callback:
+            log_callback("Training paused. The immutable protocol snapshot remains locked.")
+            pause_logged = True
+        if control.wait_if_paused():
+            interrupted = True
+            break
+        if pause_logged and log_callback:
+            log_callback("Training resumed with the same protocol snapshot.")
+            pause_logged = False
         progress = min(1.0, global_step / max(1, config.timesteps))
         if intrinsic is not None and intrinsic_anneal_fraction > 0.0:
             intrinsic_multiplier = max(0.0, 1.0 - progress / intrinsic_anneal_fraction)
@@ -311,7 +385,18 @@ def train_ppo(
         intrinsic_buf = np.zeros((config.rollout, config.num_envs), dtype=np.float32)
         context_buf = None
 
+        rollout_complete = True
         for t in range(config.rollout):
+            if control.paused and not pause_logged and log_callback:
+                log_callback("Training paused. The immutable protocol snapshot remains locked.")
+                pause_logged = True
+            if control.wait_if_paused():
+                interrupted = True
+                rollout_complete = False
+                break
+            if pause_logged and log_callback:
+                log_callback("Training resumed with the same protocol snapshot.")
+                pause_logged = False
             obs_buf[t] = obs
             action_masks = np.stack([env.valid_action_mask(run_mask_mode) for env in envs])
             masks_buf[t] = action_masks
@@ -370,6 +455,9 @@ def train_ppo(
             policy.observe(model, train_env_ids, actions_np.tolist(), step_rewards, step_dones)
             obs = np.stack(next_obs)
             global_step += config.num_envs
+
+        if not rollout_complete:
+            break
 
         with torch.no_grad():
             _, next_values_t, _ = peek_forward(model, torch.as_tensor(obs, dtype=torch.float32, device=device), train_env_ids)
@@ -564,6 +652,29 @@ def train_ppo(
                     }
                 )
             next_eval += config.eval_every
+
+    # Graceful interruption never overwrites the canonical final checkpoint.  A
+    # separate interrupted snapshot preserves the exact immutable protocol and the
+    # current model state for inspection or manual recovery.
+    if interrupted or control.stop_requested:
+        interrupted_path = checkpoint_path.with_name(f"{checkpoint_path.stem}.interrupted{checkpoint_path.suffix}")
+        torch.save(
+            _checkpoint_payload(
+                model=model,
+                model_module=model_module,
+                model_display_name=model_spec.display_name,
+                config=config,
+                observation_shape=tuple(obs.shape[1:]),
+                action_count=envs[0].action_space_n,
+                role="interrupted",
+                global_step=global_step,
+                selection_metrics=best_metrics,
+            ),
+            interrupted_path,
+        )
+        if log_callback:
+            log_callback(f"Graceful stop completed at step {global_step}; interrupted checkpoint: {interrupted_path}")
+        return interrupted_path
 
     # The canonical model checkpoint is the exact final optimizer endpoint that
     # produced the last on-screen quick evaluation. Validation-best weights are kept

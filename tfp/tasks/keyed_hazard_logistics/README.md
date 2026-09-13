@@ -1,20 +1,22 @@
 # Keyed Multi-Cargo Logistics
 
-`KEYED-HAZARD-LOGISTICS` studies long-horizon logistics under **partial observability, symbolic access constraints, multi-goal ordering, and dynamic safety risk**. An agent operates in a multi-room environment, acquires persistent red/green/blue keycards to unlock colored access frontiers, transports 1–3 cargo items one at a time to a shared destination, and avoids two independently roaming wolf hazards. Maps span Medium through Large+++ and vary room geometry, door placement, access depth, cargo placement, and hazard trajectories across seeds.
+`KEYED-HAZARD-LOGISTICS` studies long-horizon logistics under **partial observability, symbolic access constraints, multi-goal ordering, and dynamic safety risk**. An agent acquires persistent red/green/blue keycards to unlock colored room-graph frontiers, transports 1–3 cargo items one at a time to a shared destination, and avoids two independently roaming wolf hazards. Maps span Medium through Large+++ and vary room geometry, door placement, access depth, cargo placement, and hazard trajectories across seeds.
 
-The task is intentionally stronger than a sequential key-door puzzle. Colored locks control complete room-graph frontiers, so the dependency cannot be bypassed through another corridor. Capacity-one transport then forces repeated planning through already unlocked regions, while two stochastic hazards make the shortest path potentially unsafe. The policy remains local (5×5 or 7×7); it receives only compact progress, key inventory, hazard telemetry, and a next-subgoal waypoint rather than a global map or full plan.
+Colored locks control complete access frontiers, preventing trivial corridor bypasses. Capacity-one transport forces repeated planning through already unlocked regions, while the moving hazards make the shortest path potentially unsafe. The policy remains local (5×5 or 7×7) and receives compact mission state, a next-subgoal waypoint, and observed hazard telemetry rather than a global map or future hazard path.
 
 ## Models
 
 | Model | Research role |
 |---|---|
-| `001_dependency_film_shield` | FiLM-conditioned local perception with symbolic dependency state and a bounded soft safety/navigation prior. |
-| `002_event_memory_transformer` | Transformer memory over compact task events and hazard telemetry instead of expensive image-history recurrence. |
+| `001_dependency_film_shield` | FiLM-conditioned local perception with symbolic dependency state and a bounded motion-aware safety/navigation prior. |
+| `002_event_memory_transformer` | Transformer memory over compact mission events and hazard telemetry instead of recurrent image history. |
 | `003_dual_timescale_gru_shield` | Separate long-timescale task memory and short-timescale hazard memory, plus explicit action history. |
 
-## Reward
+## Reward and hazard observation
 
-`001_dependency_risk_potential` uses executable subgoal-distance shaping, sparse key/pickup/delivery milestones, symmetric action-caused risk improvement, and anti-cycle penalties. Wolf motion after the agent action is excluded from dense safety credit, preventing passive hazard movement from generating free reward. Door interaction receives only a small acknowledgement; useful door opening is rewarded primarily by reducing executable cost, so repeated toggle cycles are net-negative.
+The default `002_predictive_hazard_potential` retains executable subgoal progress and sparse key/cargo/delivery milestones, then adds **observed-motion safety shaping**. The 43-channel observation includes current wolf bearing/distance, observed velocity, and closing rate. Reward uses agent-caused predictive-risk improvement, local safety regret, and a near-miss penalty before terminal collision. Wolf motion after the action cannot generate free safety credit. `001_dependency_risk_potential` remains available for ablation.
+
+Evaluation exports `hazard_collisions`, `near_misses`, and `failure_reason` so predator-driven failures can be separated from timeout, navigation, and task-logic failures.
 
 ## Environment
 
@@ -23,5 +25,7 @@ The task is intentionally stronger than a sequential key-door puzzle. Colored lo
 - **Access:** persistent colored keycards and locked room-graph frontiers.
 - **Hazards:** two seeded roaming wolves; contact terminates the episode.
 - **Actions:** move, pickup, drop, toggle door, wait.
-- **Observation:** local 5×5 or 7×7, 37 channels.
+- **Observation:** local 5×5 or 7×7, 43 channels.
 - **Evaluation:** 20 held-out layouts × 5 default seeds = 100 episodes per controlled model evaluation.
+
+See [`academic_discussion/05_keyed_hazard_logistics.md`](../../../academic_discussion/05_keyed_hazard_logistics.md) for the complete safety-failure analysis and proposed ablations.

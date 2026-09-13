@@ -26,15 +26,16 @@ class KeyedHazardLogisticsEnv:
     opened in order before the deepest cargo rooms become reachable. Keys are persistent
     keycards; cargo capacity remains one.
 
-    Observation channels (37 x V x V)
+    Observation channels (43 x V x V)
     ---------------------------------
       Spatial 0..12:
         wall, closed door, open door, locked-R/G/B, cargo, goal, key-R/G/B,
         wolf, agent.
-      Broadcast context 13..36:
+      Broadcast context 13..42:
         carrying, key inventory R/G/B, remaining/delivered cargo, route waypoint dy/dx,
         phase one-hot (key/cargo/goal), pickup/delivery affordances, adjacent-door state,
-        two wolf bearings/distances, unlocked-access fraction, episode-time fraction.
+        two wolf bearings/distances, unlocked-access fraction, episode-time fraction,
+        observed wolf velocities, and per-wolf closing rates.
 
     The route cue is intentionally low bandwidth: only the next required doorway (or the
     active key/cargo/goal when no doorway remains) is exposed. The global map, full route,
@@ -55,7 +56,7 @@ class KeyedHazardLogisticsEnv:
         view_size: int = 7,
         max_steps: Optional[int] = None,
         seed: int = 0,
-        reward_module: str = "001_dependency_risk_potential",
+        reward_module: str = "002_predictive_hazard_potential",
         wolves_enabled: bool = True,
     ) -> None:
         if observation_mode != "local":
@@ -77,7 +78,7 @@ class KeyedHazardLogisticsEnv:
         self.wolves_enabled = bool(wolves_enabled)
 
         self.action_space_n = 8
-        self.observation_shape = (37, self.view_size, self.view_size)
+        self.observation_shape = (43, self.view_size, self.view_size)
         self.capacity = 1
 
         self.grid: np.ndarray
@@ -105,11 +106,13 @@ class KeyedHazardLogisticsEnv:
         self.delivered_count = 0
         self.carrying = False
         self.wolf_positions: list[Pos] = []
+        self.prev_wolf_positions: list[Pos] = []
         self.wolf_targets: list[Optional[Pos]] = [None, None]
 
         self.steps = 0
         self.collisions = 0
         self.hazard_collisions = 0
+        self.near_miss_count = 0
         self.invalid_actions = 0
         self.pickup_count = 0
         self.key_pickups = 0
@@ -510,6 +513,7 @@ class KeyedHazardLogisticsEnv:
     def _move_wolves(self) -> None:
         if not self.wolves_enabled:
             return
+        previous = list(self.wolf_positions)
         new_positions: list[Pos] = []
         for i, wolf in enumerate(self.wolf_positions):
             component = self._wolf_component(wolf)
@@ -523,14 +527,51 @@ class KeyedHazardLogisticsEnv:
             if nxt in new_positions:
                 nxt = wolf
             new_positions.append(nxt)
+        self.prev_wolf_positions = previous
         self.wolf_positions = new_positions
 
-    def _risk_score(self, pos: Pos) -> float:
+    @staticmethod
+    def _risk_score_from(pos: Pos, wolves: Sequence[Pos]) -> float:
         score = 0.0
-        for wolf in self.wolf_positions:
+        for wolf in wolves:
             d = abs(pos[0] - wolf[0]) + abs(pos[1] - wolf[1])
             score += float(np.exp(-0.55 * d))
         return score
+
+    def _risk_score(self, pos: Pos) -> float:
+        return self._risk_score_from(pos, self.wolf_positions)
+
+    def _wolf_velocities(self) -> list[Pos]:
+        if len(self.prev_wolf_positions) != len(self.wolf_positions):
+            return [(0, 0) for _ in self.wolf_positions]
+        return [
+            (int(np.clip(cur[0] - prev[0], -1, 1)), int(np.clip(cur[1] - prev[1], -1, 1)))
+            for cur, prev in zip(self.wolf_positions, self.prev_wolf_positions)
+        ]
+
+    def _predicted_wolf_positions(self) -> list[Pos]:
+        predicted: list[Pos] = []
+        for wolf, (vy, vx) in zip(self.wolf_positions, self._wolf_velocities()):
+            candidate = (wolf[0] + vy, wolf[1] + vx)
+            predicted.append(candidate if self._wolf_passable(candidate) else wolf)
+        return predicted
+
+    def _predictive_risk(self, pos: Pos) -> float:
+        # Conservative blend: current occupancy matters most, while linear one-step
+        # extrapolation captures approaching hazards without exposing future RNG/targets.
+        current = self._risk_score_from(pos, self.wolf_positions)
+        predicted = self._risk_score_from(pos, self._predicted_wolf_positions())
+        return 0.45 * current + 0.55 * predicted
+
+    def _local_safety_regret(self, chosen_pos: Pos) -> float:
+        candidates = [self.agent_pos]
+        ar, ac = self.agent_pos
+        for dr, dc in self.ACTIONS.values():
+            nxt = (ar + dr, ac + dc)
+            if self._is_free(nxt):
+                candidates.append(nxt)
+        best = min(self._predictive_risk(p) for p in candidates) if candidates else self._predictive_risk(chosen_pos)
+        return max(0.0, self._predictive_risk(chosen_pos) - best)
 
     # ------------------------------------------------------------------- reset
     def reset(self, seed: Optional[int] = None, map_path: Optional[str | Path] = None):
@@ -546,6 +587,7 @@ class KeyedHazardLogisticsEnv:
         self.steps = 0
         self.collisions = 0
         self.hazard_collisions = 0
+        self.near_miss_count = 0
         self.invalid_actions = 0
         self.pickup_count = 0
         self.key_pickups = 0
@@ -557,6 +599,7 @@ class KeyedHazardLogisticsEnv:
         self.max_steps = self._configured_max_steps or max(700, 19 * (self.grid.shape[0] + self.grid.shape[1]) + 180 * 3)
         self._configure_access_dependencies()
         self._spawn_mission_entities()
+        self.prev_wolf_positions = list(self.wolf_positions)
         self._visited_rooms = {self.start_room}
         self._state_visits = {}
         self._invalidate_planner()
@@ -589,6 +632,8 @@ class KeyedHazardLogisticsEnv:
         target_before, _ = self._target_field()
         distance_before = self._target_distance(self.agent_pos)
         risk_before = self._risk_score(self.agent_pos)
+        predictive_risk_before = self._predictive_risk(self.agent_pos)
+        action_origin = self.agent_pos
         room_before = self._room_for_agent()
         pickup_available_before = self._pickup_available()
         delivery_available_before = self.carrying and self.agent_pos == self.goal_pos
@@ -661,6 +706,11 @@ class KeyedHazardLogisticsEnv:
         # Agent-caused risk/progress are measured before stochastic hazard motion.
         risk_after_agent = self._risk_score(self.agent_pos)
         risk_improvement = float(risk_before - risk_after_agent)
+        predictive_risk_after_agent = self._predictive_risk(self.agent_pos)
+        predictive_risk_improvement = float(predictive_risk_before - predictive_risk_after_agent)
+        # Compare the executed destination against locally feasible alternatives under
+        # the same observed hazard state.  This is a learning signal, not a hard mask.
+        safety_regret = self._local_safety_regret(self.agent_pos) if self.agent_pos != action_origin or wait_action else 0.0
         milestone = key_pickup or cargo_pickup or delivered or self.last_event == "early_drop"
         if milestone:
             distance_after = distance_before
@@ -688,6 +738,13 @@ class KeyedHazardLogisticsEnv:
             self.collisions += 1
             self.failure_reason = "wolf_collision"
             self.last_event = "wolf_collision"
+        nearest_wolf_distance = min(
+            (abs(self.agent_pos[0] - w[0]) + abs(self.agent_pos[1] - w[1]) for w in self.wolf_positions),
+            default=999,
+        )
+        near_miss = bool((not predator_collision) and nearest_wolf_distance <= 1)
+        if near_miss:
+            self.near_miss_count += 1
 
         room_after = self._room_for_agent()
         entered_new_room = bool(moved and room_after != room_before and room_after not in self._visited_rooms)
@@ -717,6 +774,12 @@ class KeyedHazardLogisticsEnv:
             "risk_before": float(risk_before),
             "risk_after_agent": float(risk_after_agent),
             "risk_improvement": float(risk_improvement),
+            "predictive_risk_before": float(predictive_risk_before),
+            "predictive_risk_after_agent": float(predictive_risk_after_agent),
+            "predictive_risk_improvement": float(predictive_risk_improvement),
+            "safety_regret": float(safety_regret),
+            "near_miss": near_miss,
+            "nearest_wolf_distance": int(nearest_wolf_distance),
             "repeat_visit": repeat_visit,
             "visit_count": visits,
             "entered_new_room": entered_new_room,
@@ -774,6 +837,24 @@ class KeyedHazardLogisticsEnv:
             output.append((0.0, 0.0, 1.0))
         return output
 
+    def _wolf_motion_context(self) -> list[tuple[float, float, float]]:
+        velocities = self._wolf_velocities()
+        wolves = sorted(
+            list(enumerate(self.wolf_positions)),
+            key=lambda item: abs(item[1][0]-self.agent_pos[0]) + abs(item[1][1]-self.agent_pos[1]),
+        )
+        output: list[tuple[float, float, float]] = []
+        for index, wolf in wolves[:2]:
+            vy, vx = velocities[index] if index < len(velocities) else (0, 0)
+            current_d = abs(wolf[0]-self.agent_pos[0]) + abs(wolf[1]-self.agent_pos[1])
+            pred = (wolf[0] + vy, wolf[1] + vx)
+            pred_d = abs(pred[0]-self.agent_pos[0]) + abs(pred[1]-self.agent_pos[1])
+            closing = float(np.clip(current_d - pred_d, -1, 1))
+            output.append((float(vy), float(vx), closing))
+        while len(output) < 2:
+            output.append((0.0, 0.0, 0.0))
+        return output
+
     def _observation(self) -> np.ndarray:
         v = self.view_size; radius = v // 2
         obs = np.zeros(self.observation_shape, dtype=np.float32)
@@ -822,6 +903,9 @@ class KeyedHazardLogisticsEnv:
         obs[32, :, :], obs[33, :, :], obs[34, :, :] = wolves[1]
         obs[35, :, :] = len(self.keys_owned) / max(1, len(self.lock_order_colors))
         obs[36, :, :] = min(1.0, self.steps / max(1, self.max_steps))
+        motion = self._wolf_motion_context()
+        obs[37, :, :], obs[38, :, :], obs[41, :, :] = motion[0]
+        obs[39, :, :], obs[40, :, :], obs[42, :, :] = motion[1]
         return obs
 
     def valid_action_mask(self, mode: str = "task") -> np.ndarray:
@@ -925,6 +1009,7 @@ class KeyedHazardLogisticsEnv:
             "reward_module": self.reward_module,
             "collisions": self.collisions,
             "hazard_collisions": self.hazard_collisions,
+            "near_misses": self.near_miss_count,
             "invalid_actions": self.invalid_actions,
             "pickups": self.pickup_count,
             "key_pickups": self.key_pickups,

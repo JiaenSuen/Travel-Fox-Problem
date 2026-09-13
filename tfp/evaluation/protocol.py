@@ -40,6 +40,9 @@ class EpisodeRecord:
     oracle_steps: int
     path_efficiency: float
     collisions: int
+    hazard_collisions: int
+    near_misses: int
+    failure_reason: str
     invalid_actions: int
     pickup_step: int | None
     pickups: int
@@ -64,6 +67,10 @@ class EvaluationSummary:
     mean_completion_rate: float
     mean_items_delivered: float
     mean_collisions: float
+    mean_hazard_collisions: float
+    mean_near_misses: float
+    predator_failure_rate: float
+    timeout_failure_rate: float
     mean_invalid_actions: float
     mean_cycle_events: float
     mean_interaction_cycle_events: float
@@ -85,6 +92,10 @@ def _summarize(records: Sequence[EpisodeRecord]) -> EvaluationSummary:
         mean_completion_rate=float(np.mean([r.completion_rate for r in records])) if records else 0.0,
         mean_items_delivered=float(np.mean([r.items_delivered for r in records])) if records else 0.0,
         mean_collisions=float(np.mean([r.collisions for r in records])) if records else 0.0,
+        mean_hazard_collisions=float(np.mean([r.hazard_collisions for r in records])) if records else 0.0,
+        mean_near_misses=float(np.mean([r.near_misses for r in records])) if records else 0.0,
+        predator_failure_rate=float(np.mean([r.failure_reason == "wolf_collision" for r in records])) if records else 0.0,
+        timeout_failure_rate=float(np.mean([r.failure_reason == "timeout" for r in records])) if records else 0.0,
         mean_invalid_actions=float(np.mean([r.invalid_actions for r in records])) if records else 0.0,
         mean_cycle_events=float(np.mean([r.cycle_events for r in records])) if records else 0.0,
         mean_interaction_cycle_events=float(np.mean([r.interaction_cycle_events for r in records])) if records else 0.0,
@@ -147,6 +158,7 @@ def evaluate_policy(
     output_dir: str | Path = "results",
     video_dir: str | Path = "videos",
     video_fps: int = 8,
+    display_fullscreen: bool = False,
     progress_callback: Callable[[str], None] | None = None,
     run_metadata: dict[str, object] | None = None,
 ) -> tuple[EvaluationSummary, list[EpisodeRecord], tuple[Path, Path]]:
@@ -161,8 +173,8 @@ def evaluate_policy(
     task_output_dir = Path(output_dir) / task.code
     task_video_dir = Path(video_dir) / task.code
     renderer = FoxRenderer() if presentation != "data" else None
-    window = LiveWindow() if presentation != "data" else None
-    recorder = VideoRecorder(task_video_dir, fps=video_fps) if presentation == "video" else None
+    window = LiveWindow(fullscreen=display_fullscreen) if presentation != "data" else None
+    recorder = VideoRecorder(task_video_dir, fps=video_fps, terminal_hold_seconds=1.0, outro_seconds=1.5) if presentation == "video" else None
     records: list[EpisodeRecord] = []
     eval_env_id = (2_000_000,)
 
@@ -234,6 +246,9 @@ def evaluate_policy(
                                 oracle_steps=int(info.get("oracle_steps", 0)),
                                 path_efficiency=float(info.get("path_efficiency", 0.0)),
                                 collisions=int(info.get("collisions", 0)),
+                                hazard_collisions=int(info.get("hazard_collisions", 0)),
+                                near_misses=int(info.get("near_misses", 0)),
+                                failure_reason=str(info.get("failure_reason", "")),
                                 invalid_actions=int(info.get("invalid_actions", 0)),
                                 pickup_step=info.get("pickup_step"),
                                 pickups=int(info.get("pickups", 1 if info.get("pickup_step") is not None else 0)),

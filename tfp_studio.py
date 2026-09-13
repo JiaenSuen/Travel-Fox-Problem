@@ -20,7 +20,7 @@ from tfp.rewards import discover_reward_plugins
 from tfp.reporting import collect_evaluation_runs, rebuild_all_reports
 from tfp.runtime import resolve_device, runtime_status
 from tfp.tasks import create_task_env, discover_tasks, get_task
-from tfp.training import PPOConfig, train_ppo
+from tfp.training import PPOConfig, TrainingControl, train_ppo
 from tfp.utils import discover_maps
 
 ROOT = Path(__file__).resolve().parent
@@ -251,6 +251,9 @@ class TFPStudio(tk.Tk):
         self.minsize(1120, 760)
         self.log_queue: queue.Queue[object] = queue.Queue()
         self.worker: threading.Thread | None = None
+        self.worker_kind: str | None = None
+        self.training_control: TrainingControl | None = None
+        self._locked_widget_states: dict[object, str] = {}
         self._configure_style()
         self._build_vars()
         self._build_ui()
@@ -344,6 +347,8 @@ class TFPStudio(tk.Tk):
         self.eval_policy_var = tk.StringVar(value="checkpoint")
         self.eval_reward_var = tk.StringVar(value="checkpoint")
         self.presentation_var = tk.StringVar(value="Data only")
+        self.video_fps_var = tk.StringVar(value="6")
+        self.eval_fullscreen_var = tk.BooleanVar(value=False)
         self.progress_var = tk.DoubleVar(value=0.0)
         self.metric_steps_var = tk.StringVar(value="0")
         self.metric_train_var = tk.StringVar(value="0.000")
@@ -437,6 +442,7 @@ class TFPStudio(tk.Tk):
         parent.rowconfigure(0, weight=1)
 
         config = ttk.Frame(parent, style="Card.TFrame", padding=16)
+        self.train_config_frame = config
         config.grid(row=0, column=0, sticky="nsw", padx=(0, 12))
         ttk.Label(config, text="Experiment Composition", style="Card.TLabel", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
         r = 1
@@ -478,7 +484,18 @@ class TFPStudio(tk.Tk):
         self.train_button = SoftRoundedButton(
             config, "Start Training", self._start_training, width=282, height=42, surface=PALETTE["card"]
         )
-        self.train_button.grid(row=r, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+        self.train_button.grid(row=r, column=0, columnspan=2, sticky="ew", pady=(8, 0)); r += 1
+        control_row = ttk.Frame(config, style="Card.TFrame")
+        control_row.grid(row=r, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        control_row.columnconfigure(0, weight=1); control_row.columnconfigure(1, weight=1)
+        self.pause_button = ttk.Button(control_row, text="Pause", command=self._toggle_training_pause, state="disabled")
+        self.pause_button.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+        self.stop_button = ttk.Button(control_row, text="Graceful Stop", command=self._request_training_stop, state="disabled")
+        self.stop_button.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+        ttk.Label(
+            config, text="Running protocol is immutable. Pause preserves state; Graceful Stop writes a separate .interrupted checkpoint.",
+            style="Card.TLabel", foreground=PALETTE["blue_ink"], wraplength=290,
+        ).grid(row=r + 1, column=0, columnspan=2, sticky="w", pady=(5, 0))
 
         dash = ttk.Frame(parent, style="Card.TFrame", padding=18)
         dash.grid(row=0, column=1, sticky="nsew")
@@ -513,6 +530,10 @@ class TFPStudio(tk.Tk):
         ttk.Label(card, text="Use checkpoint for protocol-matched evaluation. task forces required interaction on cargo/goal cells; valid allows leaving those cells.", style="Card.TLabel", foreground=PALETTE["blue_ink"], wraplength=900).grid(row=r, column=0, columnspan=3, sticky="w", pady=(0, 6)); r += 1
         self._row_entry(card, r, "Experiment tag", self.experiment_tag_var, width=40); r += 1
         self._row_combo(card, r, "Presentation", self.presentation_var, ["Data only", "Data + display", "Data + display + video"]); r += 1
+        self._row_combo(card, r, "Video FPS", self.video_fps_var, ["4", "6", "8", "10", "12"]); r += 1
+        ttk.Label(card, text="Fullscreen display", style="Card.TLabel").grid(row=r, column=0, sticky="w", pady=4)
+        ttk.Checkbutton(card, variable=self.eval_fullscreen_var).grid(row=r, column=1, sticky="w"); r += 1
+        ttk.Label(card, text="F11 also toggles fullscreen during playback; Esc returns to windowed mode.", style="Card.TLabel", foreground=PALETTE["blue_ink"]).grid(row=r, column=0, columnspan=3, sticky="w", pady=(0, 4)); r += 1
         self._row_entry(card, r, "Evaluation seeds", self.eval_seed_var, width=72); r += 1
         ttk.Label(
             card,
@@ -569,15 +590,15 @@ class TFPStudio(tk.Tk):
         table_card = ttk.Frame(parent, style="Card.TFrame", padding=10)
         table_card.grid(row=2, column=0, sticky="nsew")
         table_card.rowconfigure(0, weight=1); table_card.columnconfigure(0, weight=1)
-        columns = ("task", "source", "tag", "model", "policy", "pt_reward", "reward", "pt_mask", "mask", "suite", "episodes", "params", "inference_ms", "success", "completion", "pickup", "steps", "return", "efficiency", "collisions", "invalid", "cycles", "interaction_cycles", "revisit")
+        columns = ("task", "source", "tag", "model", "policy", "pt_reward", "reward", "pt_mask", "mask", "suite", "episodes", "params", "inference_ms", "success", "completion", "pickup", "steps", "return", "efficiency", "collisions", "hazard_fail", "near_misses", "timeout_fail", "invalid", "cycles", "interaction_cycles", "revisit")
         self.compare_tree = ttk.Treeview(table_card, columns=columns, show="headings", selectmode="extended")
         headings = {
             "task":"Task", "source":"Source", "tag":"Tag", "model":"Model", "policy":"Policy", "pt_reward":"PT Reward", "reward":"Eval Reward", "pt_mask":"PT Mask", "mask":"Eval Mask", "suite":"Suite", "episodes":"Episodes",
             "params":"Params", "inference_ms":"Infer ms", "success":"Success", "completion":"Completion", "pickup":"Pickup",
-            "steps":"Mean steps", "return":"Mean return", "efficiency":"Efficiency", "collisions":"Collisions", "invalid":"Invalid",
+            "steps":"Mean steps", "return":"Mean return", "efficiency":"Efficiency", "collisions":"Collisions", "hazard_fail":"Pred fail", "near_misses":"Near miss", "timeout_fail":"Timeout", "invalid":"Invalid",
             "cycles":"Cycles", "interaction_cycles":"Interact cycles", "revisit":"State revisit"
         }
-        widths = {"task":92,"source":86,"tag":125,"model":175,"policy":155,"pt_reward":165,"reward":165,"pt_mask":82,"mask":82,"suite":90,"episodes":72,"params":86,"inference_ms":78,"success":76,"completion":86,"pickup":76,"steps":90,"return":90,"efficiency":80,"collisions":80,"invalid":72,"cycles":72,"interaction_cycles":95,"revisit":88}
+        widths = {"task":92,"source":86,"tag":125,"model":175,"policy":155,"pt_reward":165,"reward":165,"pt_mask":82,"mask":82,"suite":90,"episodes":72,"params":86,"inference_ms":78,"success":76,"completion":86,"pickup":76,"steps":90,"return":90,"efficiency":80,"collisions":80,"hazard_fail":76,"near_misses":76,"timeout_fail":72,"invalid":72,"cycles":72,"interaction_cycles":95,"revisit":88}
         left = {"task", "source", "tag", "model", "policy", "pt_reward", "reward"}
         for key in columns:
             self.compare_tree.heading(key, text=headings[key], command=lambda k=key: self._sort_comparison(k, False))
@@ -627,6 +648,9 @@ class TFPStudio(tk.Tk):
                 "return": float(summary.get("mean_return", 0.0) or 0.0),
                 "efficiency": float(summary.get("mean_path_efficiency", 0.0) or 0.0),
                 "collisions": float(summary.get("mean_collisions", 0.0) or 0.0),
+                "hazard_fail": float(summary.get("predator_failure_rate", 0.0) or 0.0),
+                "near_misses": float(summary.get("mean_near_misses", 0.0) or 0.0),
+                "timeout_fail": float(summary.get("timeout_failure_rate", 0.0) or 0.0),
                 "invalid": float(summary.get("mean_invalid_actions", 0.0) or 0.0),
                 "cycles": float(summary.get("mean_cycle_events", 0.0) or 0.0),
                 "interaction_cycles": float(summary.get("mean_interaction_cycle_events", 0.0) or 0.0),
@@ -661,7 +685,7 @@ class TFPStudio(tk.Tk):
             values = (
                 row["task"], row["source"], row["tag"], row["model"], row["policy"], row["pt_reward"], row["reward"], row["pt_mask"], row["mask"], row["suite"], row["episodes"], params_text, inference_text,
                 f'{row["success"]:.3f}', f'{row["completion"]:.3f}', f'{row["pickup"]:.3f}', f'{row["steps"]:.1f}', f'{row["return"]:.2f}', f'{row["efficiency"]:.3f}',
-                f'{row["collisions"]:.2f}', f'{row["invalid"]:.2f}', f'{row["cycles"]:.2f}', f'{row["interaction_cycles"]:.2f}', f'{row["revisit"]:.3f}'
+                f'{row["collisions"]:.2f}', f'{row["hazard_fail"]:.3f}', f'{row["near_misses"]:.2f}', f'{row["timeout_fail"]:.3f}', f'{row["invalid"]:.2f}', f'{row["cycles"]:.2f}', f'{row["interaction_cycles"]:.2f}', f'{row["revisit"]:.3f}'
             )
             iid = self.compare_tree.insert("", "end", values=values)
             self._comparison_paths[iid] = path
@@ -865,6 +889,7 @@ class TFPStudio(tk.Tk):
             "gae_lambda": self.gae_var.get(), "clip": self.clip_var.get(), "lr": self.lr_var.get(), "entropy": self.entropy_var.get(),
             "eval_every": self.eval_every_var.get(), "checkpoint": self.checkpoint_var.get(), "eval_seeds": self.eval_seed_var.get(),
             "experiment_tag": self.experiment_tag_var.get(), "eval_checkpoint_role": self.eval_checkpoint_role_var.get(),
+            "video_fps": self.video_fps_var.get(), "eval_fullscreen": self.eval_fullscreen_var.get(),
         }
 
     def _save_config(self) -> None:
@@ -887,7 +912,7 @@ class TFPStudio(tk.Tk):
             "view_size": self.view_var, "action_mask": self.mask_var, "rollout": self.rollout_var, "epochs": self.epochs_var,
             "minibatch": self.minibatch_var, "gamma": self.gamma_var, "gae_lambda": self.gae_var, "clip": self.clip_var, "lr": self.lr_var,
             "entropy": self.entropy_var, "eval_every": self.eval_every_var, "eval_seeds": self.eval_seed_var, "experiment_tag": self.experiment_tag_var,
-            "eval_checkpoint_role": self.eval_checkpoint_role_var,
+            "eval_checkpoint_role": self.eval_checkpoint_role_var, "video_fps": self.video_fps_var,
         }
         for key, variable in mapping.items():
             if key in payload:
@@ -898,6 +923,8 @@ class TFPStudio(tk.Tk):
             self._write_log("Migrated legacy action_mask=none to task (unmasked mode is not supported).")
         if "curriculum" in payload:
             self.curriculum_var.set(bool(payload["curriculum"]))
+        if "eval_fullscreen" in payload:
+            self.eval_fullscreen_var.set(bool(payload["eval_fullscreen"]))
         self._refresh_plugins()
         self._sync_checkpoint_paths()
         self._write_log(f"Loaded experiment config: {path}")
@@ -942,6 +969,8 @@ class TFPStudio(tk.Tk):
         self.metric_eff_var.set("—")
         self.metric_loss_var.set("—")
         self.train_chart.reset()
+        self.worker_kind = "training"
+        self.training_control = TrainingControl()
         self._set_buttons(False)
 
         def work() -> None:
@@ -950,6 +979,7 @@ class TFPStudio(tk.Tk):
                     selected_model, train_maps, test_maps, checkpoint, config,
                     log_callback=self.log_queue.put,
                     progress_callback=self.log_queue.put,
+                    control=self.training_control,
                 )
             except Exception as exc:
                 self.log_queue.put(f"ERROR: {type(exc).__name__}: {exc}")
@@ -958,6 +988,55 @@ class TFPStudio(tk.Tk):
 
         self.worker = threading.Thread(target=work, daemon=True)
         self.worker.start()
+
+    def _toggle_training_pause(self) -> None:
+        control = self.training_control
+        if control is None or self.worker_kind != "training":
+            return
+        if control.paused:
+            control.resume()
+            self.pause_button.configure(text="Pause")
+            self._write_log("Resume requested; protocol parameters remain unchanged.")
+        else:
+            control.pause()
+            self.pause_button.configure(text="Resume")
+            self._write_log("Pause requested; training will pause at the next safe collection point.")
+
+    def _request_training_stop(self) -> None:
+        control = self.training_control
+        if control is None or self.worker_kind != "training":
+            return
+        if messagebox.askyesno(
+            "Graceful Stop",
+            "Stop this training run? The current protocol will remain unchanged and a separate interrupted checkpoint will be written.",
+        ):
+            control.request_stop()
+            self.pause_button.configure(state="disabled")
+            self.stop_button.configure(state="disabled")
+            self._write_log("Graceful stop requested; waiting for the trainer to save a safe interrupted checkpoint.")
+
+    def _set_training_form_locked(self, locked: bool) -> None:
+        frame = getattr(self, "train_config_frame", None)
+        if frame is None:
+            return
+        def walk(widget):
+            for child in widget.winfo_children():
+                if isinstance(child, (ttk.Entry, ttk.Combobox, ttk.Checkbutton)):
+                    if locked:
+                        try:
+                            self._locked_widget_states[child] = str(child.cget("state"))
+                            child.configure(state="disabled")
+                        except tk.TclError:
+                            pass
+                    else:
+                        state = self._locked_widget_states.pop(child, None)
+                        if state is not None:
+                            try:
+                                child.configure(state=state)
+                            except tk.TclError:
+                                pass
+                walk(child)
+        walk(frame)
 
     def _start_evaluation(self) -> None:
         if self.worker and self.worker.is_alive():
@@ -986,6 +1065,8 @@ class TFPStudio(tk.Tk):
 
         presentation_map = {"Data only": "data", "Data + display": "display", "Data + display + video": "video"}
         presentation = presentation_map[self.presentation_var.get()]
+        self.worker_kind = "evaluation"
+        self.training_control = None
         self._set_buttons(False)
 
         def work() -> None:
@@ -1030,6 +1111,7 @@ class TFPStudio(tk.Tk):
                     model, env, test_maps, device, seeds=seeds, action_mask_mode=action_mask_mode,
                     policy_module=policy_module, model_name=loaded_model, presentation=presentation,
                     output_dir=ROOT / "results", video_dir=ROOT / "videos", progress_callback=self.log_queue.put,
+                    video_fps=int(self.video_fps_var.get()), display_fullscreen=bool(self.eval_fullscreen_var.get()),
                     run_metadata={
                         "experiment_tag": self.experiment_tag_var.get().strip(),
                         "checkpoint": str(checkpoint),
@@ -1040,6 +1122,7 @@ class TFPStudio(tk.Tk):
                         "checkpoint_reward_module": str(ckpt.get("reward_module", "unknown")),
                         "checkpoint_policy_module": str(ckpt.get("policy_module", "unknown")),
                         "checkpoint_action_mask_mode": str(ckpt.get("action_mask_mode", "unknown")),
+                        "checkpoint_protocol_fingerprint": str(ckpt.get("protocol_fingerprint", "legacy")),
                         "model_parameters": sum(p.numel() for p in model.parameters()),
                         "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
                     },
@@ -1047,6 +1130,7 @@ class TFPStudio(tk.Tk):
                 self.log_queue.put(
                     f"SUMMARY success={summary.success_rate:.3f} mean_steps={summary.mean_steps:.1f} "
                     f"efficiency={summary.mean_path_efficiency:.3f} collisions={summary.mean_collisions:.2f} "
+                    f"pred_fail={summary.predator_failure_rate:.3f} near_miss={summary.mean_near_misses:.2f} timeout={summary.timeout_failure_rate:.3f} "
                     f"cycles={summary.mean_cycle_events:.2f} interaction_cycles={summary.mean_interaction_cycle_events:.2f} "
                     f"revisit={summary.mean_state_revisit_rate:.3f} inference={summary.mean_inference_ms:.3f}ms"
                 )
@@ -1065,10 +1149,12 @@ class TFPStudio(tk.Tk):
         self.train_button.configure(state=state)
         self.eval_button.configure(state=state)
         self.load_config_button.configure(state=state)
-        # Protocol-critical selectors are locked while a worker is active.  The
-        # training thread receives an immutable PPOConfig snapshot, and locking the
-        # widgets prevents the UI from visually suggesting that a running task/valid
-        # protocol changed midway through training.
+        self.save_config_button.configure(state=state)
+
+        # The trainer receives a frozen PPOConfig.  We additionally freeze every
+        # visible training input while the worker is active so the GUI cannot suggest
+        # that LR/seed/view/mask/reward changed mid-run.
+        self._set_training_form_locked(not enabled)
         combo_state = "readonly" if enabled else "disabled"
         for name in (
             "task_combo", "model_combo", "policy_combo", "reward_combo",
@@ -1079,12 +1165,19 @@ class TFPStudio(tk.Tk):
             if widget is not None:
                 widget.configure(state=combo_state)
 
+        if hasattr(self, "pause_button"):
+            training_active = (not enabled) and self.worker_kind == "training"
+            self.pause_button.configure(state="normal" if training_active else "disabled", text="Pause")
+            self.stop_button.configure(state="normal" if training_active else "disabled")
+
     def _drain_log_queue(self) -> None:
         try:
             while True:
                 message = self.log_queue.get_nowait()
                 if message == "__WORKER_DONE__":
                     self._set_buttons(True)
+                    self.worker_kind = None
+                    self.training_control = None
                 elif isinstance(message, dict):
                     self._handle_progress(message)
                 else:

@@ -28,13 +28,14 @@ def test_keyed_assets_scales_models_and_reward():
     assert set(discover_model_plugins(TASK_ID)) == {
         "001_dependency_film_shield", "002_event_memory_transformer", "003_dual_timescale_gru_shield"
     }
-    assert set(discover_reward_plugins(TASK_ID)) == {"001_dependency_risk_potential"}
+    assert set(discover_reward_plugins(TASK_ID)) == {"001_dependency_risk_potential", "002_predictive_hazard_potential"}
+    assert task.default_reward == "002_predictive_hazard_potential"
 
 
 def test_keyed_observation_actions_and_structural_dependencies():
     for view in (5, 7):
         env = _env(view_size=view)
-        assert env._observation().shape == (37, view, view)
+        assert env._observation().shape == (43, view, view)
         assert env.action_space_n == 8
         assert env.structurally_solvable()
         assert 1 <= len(env.lock_order_colors) <= 3
@@ -90,3 +91,41 @@ def test_keyed_models_forward_and_memory_contracts():
         if name == "001_dependency_film_shield": assert context is None
         else: assert context is not None
         assert torch.isfinite(logits).all() and torch.isfinite(value).all()
+
+
+def test_predictive_hazard_reward_penalizes_avoidable_risk_and_near_miss():
+    env = _env(wolves_enabled=True)
+    reward = env.reward_function
+    safe = reward.compute({"predictive_risk_improvement": 0.3, "safety_regret": 0.0})
+    risky = reward.compute({"predictive_risk_improvement": -0.3, "safety_regret": 0.4, "near_miss": True})
+    collision = reward.compute({"predator_collision": True})
+    assert safe > 0
+    assert risky < safe
+    assert collision < -25
+
+
+def test_keyed_observation_exposes_observed_wolf_motion_without_future_path():
+    env = _env(wolves_enabled=True)
+    obs0 = env._observation()
+    assert obs0.shape[0] == 43
+    # Velocity starts at zero because reset has no prior observation.
+    assert float(abs(obs0[37]).max()) == 0.0
+    env._move_wolves()
+    obs1 = env._observation()
+    assert all(float(abs(obs1[i]).max()) <= 1.0 for i in (37, 38, 39, 40, 41, 42))
+
+
+def test_keyed_info_counts_near_misses_for_safety_analysis():
+    env = _env(wolves_enabled=True)
+    # Put a wolf adjacent while choosing WAIT; stochastic motion is disabled for this
+    # diagnostic so the transition remains a non-terminal near miss.
+    ar, ac = env.agent_pos
+    candidates = [(ar + dr, ac + dc) for dr, dc in env.ACTIONS.values() if env._is_free((ar + dr, ac + dc))]
+    assert candidates
+    env.wolf_positions = [candidates[0], candidates[-1]]
+    env.prev_wolf_positions = list(env.wolf_positions)
+    env._move_wolves = lambda: None  # type: ignore[method-assign]
+    _, _, terminated, _, info = env.step(7)
+    if not terminated:
+        assert info["near_misses"] >= 1
+        assert info["hazard_collisions"] == 0

@@ -2,7 +2,7 @@
   "task": "KEYED-HAZARD-LOGISTICS",
   "model": "001_dependency_film_shield",
   "algorithm": "ppo",
-  "reward": "001_dependency_risk_potential",
+  "reward": "002_predictive_hazard_potential",
   "mask_mode": "task",
   "view_size": 7,
   "total_timesteps": 450000,
